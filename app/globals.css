@@ -20,7 +20,7 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+background-color: #f4f4f5; /* Warna abu-abu sangat muda */
+  color: #18181b; /* Warna teks gelap */
   font-family: Arial, Helvetica, sans-serif;
 }
