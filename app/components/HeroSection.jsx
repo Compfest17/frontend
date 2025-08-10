@@ -4,7 +4,7 @@ export default function HeroSection() {
   return (
     <section className="text-center py-16 sm:py-20">
       <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-4">
-        Selamat Datang di Dashboard Anda
+        Selamat Datang di GatotKota
       </h1>
       <p className="max-w-2xl mx-auto text-lg text-gray-600 mb-8">
         Semua informasi penting Anda dalam satu tempat. Kelola proyek, lihat statistik, dan tetap terhubung dengan tim Anda.
