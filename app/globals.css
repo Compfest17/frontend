@@ -23,5 +23,5 @@
 body {
 background-color: #ffffff; /* Warna putih */
   color: #18181b; /* Warna teks gelap */
-  font-family: Montserrat, Helvetica, sans-serif;
+  font-family: var(--font-montserrat), sans-serif;
 }

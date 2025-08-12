@@ -110,7 +110,7 @@ export default function HeroSection() {
             <motion.p 
               custom={0.2}
               variants={textVariants}
-              className='text-sm sm:text-base text-zinc-500 font-medium'
+              className='text-sm sm:text-base font-montserrat font-medium text-zinc-500'
             >
               Anda Lapor, Kami Meluncur, Jayakan Infrastruktur
             </motion.p>
@@ -119,15 +119,16 @@ export default function HeroSection() {
               <motion.h1 
                 custom={0.4}
                 variants={textVariants}
-                className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight"
+                className="font-montserrat font-semibold leading-tight text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl"
+                style={{ color: '#DD761C' }}
               >
-                Gatot Kota
+                GatotKota
               </motion.h1>
               
               <motion.h3 
                 custom={0.6}
                 variants={textVariants}
-                className="text-xl sm:text-2xl lg:text-3xl text-gray-600 font-medium"
+                className="font-montserrat font-semibold text-black text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl"
               >
                 Laporan Infrastruktur Rusak
               </motion.h3>
@@ -136,7 +137,7 @@ export default function HeroSection() {
             <motion.p 
               custom={0.8}
               variants={textVariants}
-              className='text-sm sm:text-base text-gray-700 max-w-lg mx-auto lg:mx-0 leading-relaxed'
+              className='font-montserrat font-normal text-gray-700 max-w-lg mx-auto lg:mx-0 leading-relaxed text-sm sm:text-base md:text-lg lg:text-xl'
             >
               Platform pelaporan infrastruktur rusak yang memungkinkan masyarakat untuk melaporkan masalah infrastruktur dan berpartisipasi dalam pembangunan kota yang lebih baik.
             </motion.p>
@@ -164,7 +165,10 @@ export default function HeroSection() {
               >
                 <Link
                   href="/laporan"
-                  className="inline-block bg-black text-white px-8 py-4 rounded-xl hover:bg-gray-800 transition-colors duration-300 font-semibold text-base sm:text-lg shadow-lg hover:shadow-xl"
+                  className="inline-block text-white px-8 py-4 rounded-xl transition-colors duration-300 font-semibold text-base sm:text-lg shadow-lg hover:shadow-xl"
+                  style={{ backgroundColor: '#DD761C' }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#C5661A'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = '#DD761C'}
                 >
                   Lihat Laporan
                 </Link>
@@ -210,7 +214,8 @@ export default function HeroSection() {
                       duration: 0.6,
                       ease: [0.25, 0.1, 0.25, 1],
                     }}
-                    className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0"
+                    className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: '#DD761C' }}
                   >
                     <Bell className="w-4 h-4 text-white" />
                   </motion.div>
@@ -244,7 +249,8 @@ export default function HeroSection() {
                       duration: 0.6,
                       ease: [0.25, 0.1, 0.25, 1],
                     }}
-                    className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0"
+                    className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: '#DD761C' }}
                   >
                     <MessageSquare className="w-4 h-4 text-white" />
                   </motion.div>
@@ -264,13 +270,15 @@ export default function HeroSection() {
                 initial={{ opacity: 0, scale: 0 }}
                 animate={isLoaded ? { opacity: 0.1, scale: 1 } : { opacity: 0, scale: 0 }}
                 transition={{ delay: 1.0, duration: 1.5 }}
-                className="absolute -top-4 -right-4 w-24 h-24 bg-orange-500 rounded-full blur-3xl -z-10"
+                className="absolute -top-4 -right-4 w-24 h-24 rounded-full blur-3xl -z-10"
+                style={{ backgroundColor: '#DD761C' }}
               />
               <motion.div
                 initial={{ opacity: 0, scale: 0 }}
                 animate={isLoaded ? { opacity: 0.1, scale: 1 } : { opacity: 0, scale: 0 }}
                 transition={{ delay: 1.2, duration: 1.5 }}
-                className="absolute -bottom-8 -left-8 w-32 h-32 bg-blue-500 rounded-full blur-3xl -z-10"
+                className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full blur-3xl -z-10"
+                style={{ backgroundColor: '#DD761C' }}
               />
             </motion.div>
           </div>
