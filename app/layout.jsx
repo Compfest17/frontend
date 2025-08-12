@@ -1,10 +1,14 @@
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import LayoutWrapper from "@/components/LayoutWrapper"; // <-- JALUR IMPOR DIPERBARUI
+// C:\Users\aditya wirz\compfest17\gatotkota\app\layout.jsx
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+import { Montserrat, Geist_Mono } from "next/font/google"; // <-- 1. IMPOR MONTSERRAT
+import "./globals.css";
+import LayoutWrapper from "@/components/LayoutWrapper";
+
+// 2. KONFIGURASI FONT MONTSERRAT
+const montserrat = Montserrat({
   subsets: ["latin"],
+  weight: ['400', '500', '700'], // Pilih weight yang Anda butuhkan (400=regular, 500=medium, 700=bold)
+  variable: "--font-montserrat", // Nama variabel CSS untuk font ini
 });
 
 const geistMono = Geist_Mono({
@@ -21,9 +25,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${montserrat.variable} ${geistMono.variable} antialiased`}
       >
-        <LayoutWrapper>{children}</LayoutWrapper>
+        <LayoutWrapper>
+          {children}
+        </LayoutWrapper>
       </body>
     </html>
   );
