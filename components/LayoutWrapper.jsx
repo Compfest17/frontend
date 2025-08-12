@@ -2,12 +2,20 @@
 
 import { usePathname } from 'next/navigation';
 import MainLayout from './MainLayout';
+import Navbar from './Navbar';
 
 export default function LayoutWrapper({ children }) {
   const pathname = usePathname();
 
-  // Logika bisa ditambahkan di sini jika perlu layout yang berbeda
-  // untuk halaman tertentu, misal: /dashboard atau /login.
   
-  return <MainLayout>{children}</MainLayout>;
+  return (
+    <>
+      <Navbar />
+      <MainLayout>
+        <main className="pt-20 md:pt-24">
+          {children}
+        </main>
+      </MainLayout>
+    </>
+  );
 }
