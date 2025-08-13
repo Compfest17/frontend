@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { resetPassword } from '@/lib/supabase-auth';
 import { getAuthError } from '@/lib/authUtils';
+import BannerSlider from '@/components/auth/BannerSlider';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -34,6 +35,30 @@ export default function ForgotPasswordPage() {
     }
   };
 
+  const bannerSlides = [
+    {
+      title: "Kami Siap Membantu",
+      subtitle: "Reset password dengan mudah dan aman",
+      image: "/image/auth/Slider1.jpg",
+      alt: "Password reset help"
+    },
+    {
+      title: "Keamanan Terjamin",
+      subtitle: "Proses reset password yang aman dan terpercaya",
+      image: "/image/auth/Slider2.jpg",
+      alt: "Secure password reset"
+    }
+  ];
+
+  const successBannerSlides = [
+    {
+      title: "Cek Email Anda",
+      subtitle: "Link reset password telah dikirim",
+      image: "/image/auth/Slider3.png",
+      alt: "Check your email"
+    }
+  ];
+
   if (isSubmitted) {
     return (
       <div className="h-screen flex overflow-hidden">
@@ -50,12 +75,12 @@ export default function ForgotPasswordPage() {
 
           <div className="w-full max-w-md text-center">
             <div className="mb-8">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">
                 Email Terkirim!
               </h1>
               <p className="text-gray-600 mb-6">
@@ -70,7 +95,7 @@ export default function ForgotPasswordPage() {
             <div className="space-y-4">
               <button
                 onClick={() => setIsSubmitted(false)}
-                className="w-full text-white font-medium py-3 rounded-full transition duration-200"
+                className="w-full text-white font-medium py-4 rounded-full transition-all duration-200 hover:opacity-90 hover:shadow-lg"
                 style={{ backgroundColor: '#DD761C' }}
               >
                 Kirim Ulang Email
@@ -78,7 +103,7 @@ export default function ForgotPasswordPage() {
               
               <Link 
                 href="/login"
-                className="block w-full font-medium py-3 transition duration-200 hover:opacity-80"
+                className="block w-full font-medium py-3 transition-all duration-200 hover:opacity-80"
                 style={{ color: '#DD761C' }}
               >
                 Kembali ke Login
@@ -87,29 +112,7 @@ export default function ForgotPasswordPage() {
           </div>
         </div>
 
-        <div className="hidden lg:flex flex-1 relative h-screen">
-          <div className="absolute inset-0 bg-black bg-opacity-20"></div>
-          
-          <div className="absolute inset-0">
-            <img
-              src="/image/Rectangle.png"
-              alt="Construction worker"
-              className="w-full h-full object-cover"
-            />
-          </div>
-
-          <div className="relative z-10 flex flex-col justify-center items-start p-12 text-white">
-            <div className="max-w-md">
-              <h2 className="text-4xl font-bold mb-4 leading-tight">
-                Reset your password easily
-              </h2>
-              <div className="mb-8">
-                <p className="text-lg font-medium">Security first</p>
-                <p className="text-sm opacity-90">We've got your back</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <BannerSlider slides={successBannerSlides} autoSlide={false} />
       </div>
     );
   }
@@ -128,8 +131,8 @@ export default function ForgotPasswordPage() {
         </Link>
 
         <div className="w-full max-w-md">
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold mb-2" style={{ color: '#DD761C' }}>
+          <div className="mb-8 text-center">
+            <h1 className="text-4xl font-bold mb-4" style={{ color: '#DD761C' }}>
               Lupa Password?
             </h1>
             <p className="text-gray-600">
@@ -137,13 +140,13 @@ export default function ForgotPasswordPage() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-600 text-sm">{error}</p>
-              </div>
-            )}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-sm">{error}</p>
+            </div>
+          )}
 
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                 EMAIL
@@ -166,19 +169,21 @@ export default function ForgotPasswordPage() {
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full text-white font-medium py-4 rounded-full transition-all duration-200 hover:opacity-90 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ backgroundColor: '#DD761C' }}
-            >
-              {isLoading ? 'Mengirim...' : 'Kirim Link Reset'}
-            </button>
+            <div className="pt-4">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full text-white font-medium py-4 rounded-full transition-all duration-200 hover:opacity-90 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: '#DD761C' }}
+              >
+                {isLoading ? 'Mengirim...' : 'Kirim Link Reset'}
+              </button>
+            </div>
 
-            <div className="text-center">
+            <div className="text-center pt-2">
               <Link 
                 href="/login" 
-                className="font-medium hover:opacity-80 transition-all duration-200"
+                className="text-sm font-medium hover:opacity-80 transition-all duration-200"
                 style={{ color: '#DD761C' }}
               >
                 ← Kembali ke Login
@@ -188,35 +193,7 @@ export default function ForgotPasswordPage() {
         </div>
       </div>
 
-      <div className="hidden lg:flex flex-1 relative h-screen">
-        <div className="absolute inset-0 bg-black bg-opacity-40"></div>
-        
-        <div className="absolute inset-0">
-          <img
-            src="/image/Rectangle.png"
-            alt="Infrastructure"
-            className="w-full h-full object-cover object-center"
-          />
-        </div>
-
-        <div className="relative z-10 flex flex-col justify-center items-start p-12 text-white w-full">
-          <div className="max-w-md">
-            <h2 className="text-4xl font-bold mb-4 leading-tight">
-              Kami Siap Membantu
-            </h2>
-            <div className="mb-8">
-              <p className="text-lg font-medium">GatotKota</p>
-              <p className="text-sm opacity-90">Reset password dengan mudah dan aman</p>
-            </div>
-            
-            <div className="flex space-x-2">
-              <div className="w-3 h-3 rounded-full bg-white bg-opacity-30"></div>
-              <div className="w-3 h-3 rounded-full bg-white bg-opacity-50"></div>
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#DD761C' }}></div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <BannerSlider slides={bannerSlides} />
     </div>
   );
 }

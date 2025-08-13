@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { Eye, EyeOff } from 'lucide-react';
 import { updatePassword } from '@/lib/supabase-auth';
 import { validatePassword, getAuthError } from '@/lib/authUtils';
 import PasswordStrength from '@/components/PasswordStrength';
+import BannerSlider from '@/components/auth/BannerSlider';
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
@@ -13,6 +15,8 @@ export default function ResetPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -51,7 +55,22 @@ export default function ResetPasswordPage() {
       const { error } = await updatePassword(password);
       
       if (error) {
-        throw new Error(error.message);
+        // Handle specific error cases
+        if (error.message.includes('New password should be different from the old password') ||
+            error.message.includes('should be different from the old password') ||
+            error.message.includes('same as old password')) {
+          setError('Password baru harus berbeda dari password lama. Silakan gunakan password yang berbeda.');
+        } else if (error.message.includes('Password') || error.message.includes('password')) {
+          setError('Password tidak memenuhi kriteria. Pastikan minimal 8 karakter dengan kombinasi huruf dan angka.');
+        } else if (error.message.includes('expired') || error.message.includes('invalid')) {
+          setError('Link reset password sudah tidak valid atau expired. Silakan minta reset password baru.');
+        } else if (error.message.includes('Network') || error.message.includes('network')) {
+          setError('Koneksi bermasalah. Silakan coba lagi.');
+        } else {
+          setError(getAuthError(error, 'reset'));
+        }
+        setIsLoading(false);
+        return;
       }
 
       setSuccess(true);
@@ -62,11 +81,49 @@ export default function ResetPasswordPage() {
 
     } catch (error) {
       console.error('Reset password error:', error);
-      setError(error.message || 'Gagal mengubah password');
+      
+      // Handle different error types
+      if (error.message.includes('New password should be different from the old password') ||
+          error.message.includes('should be different from the old password') ||
+          error.message.includes('same as old password')) {
+        setError('Password baru harus berbeda dari password lama. Silakan gunakan password yang berbeda.');
+      } else if (error.message.includes('Password') || error.message.includes('password')) {
+        setError('Password tidak memenuhi kriteria. Pastikan minimal 8 karakter dengan kombinasi huruf dan angka.');
+      } else if (error.message.includes('expired') || error.message.includes('invalid')) {
+        setError('Link reset password sudah tidak valid atau expired. Silakan minta reset password baru.');
+      } else if (error.message.includes('Network') || error.message.includes('network')) {
+        setError('Koneksi bermasalah. Silakan coba lagi.');
+      } else {
+        setError(error.message || 'Gagal mengubah password. Silakan coba lagi.');
+      }
     } finally {
       setIsLoading(false);
     }
   };
+
+  const bannerSlides = [
+    {
+      title: "Amankan Akun Anda",
+      subtitle: "Password baru, awal yang baru",
+      image: "/image/auth/Slider1.jpg",
+      alt: "Secure your account"
+    },
+    {
+      title: "Keamanan Maksimal",
+      subtitle: "Lindungi akun dengan password yang kuat",
+      image: "/image/auth/Slider2.jpg",
+      alt: "Maximum security"
+    }
+  ];
+
+  const successBannerSlides = [
+    {
+      title: "Password Berhasil Diubah",
+      subtitle: "Akun Anda sekarang lebih aman",
+      image: "/image/auth/Slider3.png",
+      alt: "Password changed successfully"
+    }
+  ];
 
   if (success) {
     return (
@@ -85,16 +142,7 @@ export default function ResetPasswordPage() {
           </div>
         </div>
 
-        <div className="hidden lg:flex flex-1 relative h-screen">
-          <div className="absolute inset-0 bg-black bg-opacity-20"></div>
-          <div className="absolute inset-0">
-            <img
-              src="/image/Rectangle.png"
-              alt="Success"
-              className="w-full h-full object-cover"
-            />
-          </div>
-        </div>
+        <BannerSlider slides={successBannerSlides} autoSlide={false} />
       </div>
     );
   }
@@ -113,8 +161,8 @@ export default function ResetPasswordPage() {
         </Link>
 
         <div className="w-full max-w-md">
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold mb-2" style={{ color: '#DD761C' }}>
+          <div className="mb-8 text-center">
+            <h1 className="text-4xl font-bold mb-4" style={{ color: '#DD761C' }}>
               Reset Password
             </h1>
             <p className="text-gray-600">
@@ -122,34 +170,48 @@ export default function ResetPasswordPage() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-600 text-sm">{error}</p>
-              </div>
-            )}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-sm">{error}</p>
+            </div>
+          )}
 
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 PASSWORD BARU *
               </label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Masukkan password baru"
-                className="w-full px-0 py-3 border-0 border-b-2 border-gray-300 focus:outline-none bg-transparent text-gray-900 placeholder-gray-500 transition-colors duration-200"
-                style={{ 
-                  borderBottomColor: password ? '#DD761C' : undefined,
-                }}
-                onFocus={(e) => e.target.style.borderBottomColor = '#DD761C'}
-                onBlur={(e) => e.target.style.borderBottomColor = password ? '#DD761C' : '#d1d5db'}
-                required
-                disabled={isLoading}
-                minLength={8}
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  name="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Masukkan password baru"
+                  className="w-full px-0 py-3 pr-10 border-0 border-b-2 border-gray-300 focus:outline-none bg-transparent text-gray-900 placeholder-gray-500 transition-colors duration-200"
+                  style={{ 
+                    borderBottomColor: password ? '#DD761C' : undefined,
+                  }}
+                  onFocus={(e) => e.target.style.borderBottomColor = '#DD761C'}
+                  onBlur={(e) => e.target.style.borderBottomColor = password ? '#DD761C' : '#d1d5db'}
+                  required
+                  disabled={isLoading}
+                  minLength={8}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-0 top-3 text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <Eye className="w-5 h-5" />
+                  ) : (
+                    <EyeOff className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
               <PasswordStrength password={password} />
             </div>
 
@@ -157,60 +219,54 @@ export default function ResetPasswordPage() {
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
                 KONFIRMASI PASSWORD *
               </label>
-              <input
-                type="password"
-                id="confirmPassword"
-                name="confirmPassword"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Konfirmasi password baru"
-                className="w-full px-0 py-3 border-0 border-b-2 border-gray-300 focus:outline-none bg-transparent text-gray-900 placeholder-gray-500 transition-colors duration-200"
-                style={{ 
-                  borderBottomColor: confirmPassword ? '#DD761C' : undefined,
-                }}
-                onFocus={(e) => e.target.style.borderBottomColor = '#DD761C'}
-                onBlur={(e) => e.target.style.borderBottomColor = confirmPassword ? '#DD761C' : '#d1d5db'}
-                required
-                disabled={isLoading}
-                minLength={6}
-              />
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Konfirmasi password baru"
+                  className="w-full px-0 py-3 pr-10 border-0 border-b-2 border-gray-300 focus:outline-none bg-transparent text-gray-900 placeholder-gray-500 transition-colors duration-200"
+                  style={{ 
+                    borderBottomColor: confirmPassword ? '#DD761C' : undefined,
+                  }}
+                  onFocus={(e) => e.target.style.borderBottomColor = '#DD761C'}
+                  onBlur={(e) => e.target.style.borderBottomColor = confirmPassword ? '#DD761C' : '#d1d5db'}
+                  required
+                  disabled={isLoading}
+                  minLength={8}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-0 top-3 text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                  tabIndex={-1}
+                >
+                  {showConfirmPassword ? (
+                    <Eye className="w-5 h-5" />
+                  ) : (
+                    <EyeOff className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full text-white font-medium py-4 rounded-full transition-all duration-200 hover:opacity-90 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ backgroundColor: '#DD761C' }}
-            >
-              {isLoading ? 'Mengubah Password...' : 'Ubah Password'}
-            </button>
+            <div className="pt-4">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full text-white font-medium py-4 rounded-full transition-all duration-200 hover:opacity-90 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: '#DD761C' }}
+              >
+                {isLoading ? 'Mengubah Password...' : 'Ubah Password'}
+              </button>
+            </div>
           </form>
         </div>
       </div>
 
-      <div className="hidden lg:flex flex-1 relative h-screen">
-        <div className="absolute inset-0 bg-black bg-opacity-20"></div>
-        
-        <div className="absolute inset-0">
-          <img
-            src="/image/Rectangle.png"
-            alt="Reset Password"
-            className="w-full h-full object-cover"
-          />
-        </div>
-
-        <div className="relative z-10 flex flex-col justify-center items-start p-12 text-white">
-          <div className="max-w-md">
-            <h2 className="text-4xl font-bold mb-4 leading-tight">
-              Secure your account
-            </h2>
-            <div className="mb-8">
-              <p className="text-lg font-medium">New password, new beginning</p>
-              <p className="text-sm opacity-90">Your security matters</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <BannerSlider slides={bannerSlides} />
     </div>
   );
 }

@@ -3,8 +3,10 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Eye, EyeOff } from 'lucide-react';
 import { signIn, signInWithGoogle } from '@/lib/supabase-auth';
 import { getAuthError } from '@/lib/authUtils';
+import BannerSlider from '@/components/auth/BannerSlider';
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -14,6 +16,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
   const handleInputChange = (e) => {
@@ -34,7 +37,25 @@ export default function LoginPage() {
       const { data, error } = await signIn(formData.email, formData.password);
 
       if (error) {
-        throw new Error(error.message);
+        // Handle specific error cases
+        if (error.message.includes('Invalid login credentials') || 
+            error.message.includes('invalid credentials') ||
+            error.message.includes('Invalid email or password')) {
+          setError('Email atau password salah. Silakan coba lagi.');
+        } else if (error.message.includes('Email not confirmed') || 
+                   error.message.includes('not confirmed')) {
+          setError('Email belum diverifikasi. Silakan cek email untuk verifikasi.');
+        } else if (error.message.includes('invalid') && error.message.includes('email')) {
+          setError('Format email tidak valid. Silakan masukkan email yang benar.');
+        } else if (error.message.includes('Network') || error.message.includes('network')) {
+          setError('Koneksi bermasalah. Silakan coba lagi.');
+        } else if (error.message.includes('Too many requests')) {
+          setError('Terlalu banyak percobaan login. Silakan tunggu beberapa saat.');
+        } else {
+          setError(getAuthError(error, 'login'));
+        }
+        setIsLoading(false);
+        return;
       }
 
       if (data.user) {
@@ -44,7 +65,24 @@ export default function LoginPage() {
       }
     } catch (error) {
       console.error('Login failed:', error);
-      setError(getAuthError(error, 'login'));
+      
+      // Handle different error types
+      if (error.message.includes('Invalid login credentials') || 
+          error.message.includes('invalid credentials') ||
+          error.message.includes('Invalid email or password')) {
+        setError('Email atau password salah. Silakan coba lagi.');
+      } else if (error.message.includes('Email not confirmed') || 
+                 error.message.includes('not confirmed')) {
+        setError('Email belum diverifikasi. Silakan cek email untuk verifikasi.');
+      } else if (error.message.includes('invalid') && error.message.includes('email')) {
+        setError('Format email tidak valid. Silakan masukkan email yang benar.');
+      } else if (error.message.includes('Network') || error.message.includes('network')) {
+        setError('Koneksi bermasalah. Silakan coba lagi.');
+      } else if (error.message.includes('Too many requests')) {
+        setError('Terlalu banyak percobaan login. Silakan tunggu beberapa saat.');
+      } else {
+        setError(getAuthError(error, 'login'));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -58,17 +96,51 @@ export default function LoginPage() {
       const { data, error } = await signInWithGoogle();
       
       if (error) {
-        setError(getAuthError(error, 'login'));
+        if (error.message.includes('popup') || error.message.includes('cancelled')) {
+          setError('Login dengan Google dibatalkan. Silakan coba lagi.');
+        } else if (error.message.includes('blocked') || error.message.includes('popup_blocked')) {
+          setError('Popup diblokir browser. Silakan izinkan popup dan coba lagi.');
+        } else {
+          setError(getAuthError(error, 'login'));
+        }
         return;
       }
       
     } catch (error) {
       console.error('Google sign in failed:', error);
-      setError(getAuthError(error, 'login'));
+      
+      if (error.message.includes('popup') || error.message.includes('cancelled')) {
+        setError('Login dengan Google dibatalkan. Silakan coba lagi.');
+      } else if (error.message.includes('blocked') || error.message.includes('popup_blocked')) {
+        setError('Popup diblokir browser. Silakan izinkan popup dan coba lagi.');
+      } else {
+        setError(getAuthError(error, 'login'));
+      }
     } finally {
       setIsGoogleLoading(false);
     }
   };
+
+  const bannerSlides = [
+    {
+      title: "Laporkan Infrastruktur Rusak",
+      subtitle: "Platform Pelaporan Infrastruktur",
+      image: "/image/auth/Slider1.jpg",
+      alt: "Infrastructure reporting platform"
+    },
+    {
+      title: "Bersama Membangun Kota",
+      subtitle: "Partisipasi aktif untuk infrastruktur yang lebih baik",
+      image: "/image/auth/Slider2.jpg",
+      alt: "Community participation"
+    },
+    {
+      title: "Aksi Cepat Tanggap",
+      subtitle: "Respons cepat untuk setiap laporan masyarakat",
+      image: "/image/auth/Slider3.png",
+      alt: "Quick response system"
+    }
+  ];
 
   return (
     <div className="h-screen flex overflow-hidden">
@@ -84,8 +156,8 @@ export default function LoginPage() {
         </Link>
 
         <div className="w-full max-w-md">
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold mb-2" style={{ color: '#DD761C' }}>
+          <div className="mb-8 text-center">
+            <h1 className="text-4xl font-bold mb-4" style={{ color: '#DD761C' }}>
               Selamat Datang
             </h1>
             <p className="text-gray-600">
@@ -129,21 +201,35 @@ export default function LoginPage() {
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 PASSWORD
               </label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleInputChange}
-                placeholder="Masukkan Password"
-                className="w-full px-0 py-3 border-0 border-b-2 border-gray-300 focus:outline-none bg-transparent text-gray-900 placeholder-gray-500 transition-colors duration-200"
-                style={{ 
-                  borderBottomColor: formData.password ? '#DD761C' : undefined,
-                }}
-                onFocus={(e) => e.target.style.borderBottomColor = '#DD761C'}
-                onBlur={(e) => e.target.style.borderBottomColor = formData.password ? '#DD761C' : '#d1d5db'}
-                required
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  placeholder="Masukkan Password"
+                  className="w-full px-0 py-3 pr-10 border-0 border-b-2 border-gray-300 focus:outline-none bg-transparent text-gray-900 placeholder-gray-500 transition-colors duration-200"
+                  style={{ 
+                    borderBottomColor: formData.password ? '#DD761C' : undefined,
+                  }}
+                  onFocus={(e) => e.target.style.borderBottomColor = '#DD761C'}
+                  onBlur={(e) => e.target.style.borderBottomColor = formData.password ? '#DD761C' : '#d1d5db'}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-0 top-3 text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <Eye className="w-5 h-5" />
+                  ) : (
+                    <EyeOff className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
             </div>
 
             <div className="text-left">
@@ -152,14 +238,16 @@ export default function LoginPage() {
               </Link>
             </div>
 
-            <button
-              type="submit"
-              disabled={isLoading || isGoogleLoading}
-              className="w-full text-white font-medium py-4 rounded-full transition-all duration-200 hover:opacity-90 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ backgroundColor: '#DD761C' }}
-            >
-              {isLoading ? 'Signing In...' : 'Sign In'}
-            </button>
+            <div className="pt-4">
+              <button
+                type="submit"
+                disabled={isLoading || isGoogleLoading}
+                className="w-full text-white font-medium py-4 rounded-full transition-all duration-200 hover:opacity-90 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: '#DD761C' }}
+              >
+                {isLoading ? 'Signing In...' : 'Sign In'}
+              </button>
+            </div>
 
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
@@ -192,35 +280,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <div className="hidden lg:flex flex-1 relative h-screen">
-        <div className="absolute inset-0 bg-black bg-opacity-40"></div>
-        
-        <div className="absolute inset-0">
-          <img
-            src="/image/Rectangle.png"
-            alt="Infrastructure"
-            className="w-full h-full object-cover object-center"
-          />
-        </div>
-
-        <div className="relative z-10 flex flex-col justify-center items-start p-12 text-white w-full h-full">
-          <div className="max-w-md">
-            <h2 className="text-4xl font-bold mb-4 leading-tight">
-              Laporkan Infrastruktur Rusak
-            </h2>
-            <div className="mb-8">
-              <p className="text-lg font-medium">GatotKota</p>
-              <p className="text-sm opacity-90">Platform Pelaporan Infrastruktur</p>
-            </div>
-            
-            <div className="flex space-x-2">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#DD761C' }}></div>
-              <div className="w-3 h-3 rounded-full bg-white bg-opacity-50"></div>
-              <div className="w-3 h-3 rounded-full bg-white bg-opacity-30"></div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <BannerSlider slides={bannerSlides} />
     </div>
   );
 }
