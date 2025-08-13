@@ -3,7 +3,7 @@ import { Facebook, Instagram, Linkedin, Twitter, Mail, Phone } from 'lucide-reac
 
 export default function Footer() {
   return (
-    <footer className="bg-[#DD761C] text-white mt-12">
+    <footer className="bg-[#DD761C] text-white">
       <div className="container mx-auto px-6 py-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Company Info */}

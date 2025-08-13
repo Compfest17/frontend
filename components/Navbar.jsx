@@ -4,17 +4,20 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from "react";
-import { Menu, X } from "lucide-react";
+import { Menu, X, User, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { getCurrentUser, signOut } from '@/lib/supabase-auth';
 
 export default function Navbar() {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [user, setUser] = useState(null);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const navItems = [
-    { name: 'Dashboard', href: '/' },
+    { name: 'Dashboard', href: '/dashboard' },
     { name: 'Formulir', href: '/formulir' },
     { name: 'Forum', href: '/forum' },
   ];
@@ -25,11 +28,21 @@ export default function Navbar() {
       setIsScrolled(scrollTop > 0);
     };
 
-    // Set loaded state after component mounts with small delay for smoother effect
+    const checkUser = async () => {
+      try {
+        const { user } = await getCurrentUser();
+        setUser(user);
+      } catch (error) {
+        console.log('No authenticated user');
+        setUser(null);
+      }
+    };
+
     const timer = setTimeout(() => {
       setIsLoaded(true);
     }, 100);
 
+    checkUser();
     window.addEventListener('scroll', handleScroll);
     return () => {
       window.removeEventListener('scroll', handleScroll);
@@ -43,6 +56,16 @@ export default function Navbar() {
 
   const closeMenu = () => {
     setIsMenuOpen(false);
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      setUser(null);
+      setIsUserMenuOpen(false);
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
   };
 
   const navbarVariants = {
@@ -181,7 +204,7 @@ export default function Navbar() {
           ))}
         </motion.nav>
 
-        {/* Desktop Login Button */}
+        {/* Desktop Login/User Section */}
         <motion.div 
           initial={{ opacity: 0, x: 40 }}
           animate={{ opacity: 1, x: 0 }}
@@ -192,18 +215,73 @@ export default function Navbar() {
           }}
           className="hidden md:flex items-center gap-4"
         >
-          <Link 
-            href="/login" 
-            className="text-gray-600 hover:text-black transition-colors duration-300 ease-out text-sm font-medium"
-          >
-            Login
-          </Link>
-          <Link 
-            href="/register" 
-            className="bg-transparent border-2 border-gray-800 text-gray-800 px-6 py-2 rounded-full hover:bg-gray-800 hover:text-white transition-all duration-300 ease-out text-sm font-medium transform hover:scale-105"
-          >
-            Sign in
-          </Link>
+          {user ? (
+            /* User is logged in */
+            <div className="relative">
+              <button
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors duration-300"
+              >
+                {user.user_metadata?.avatar_url ? (
+                  <img 
+                    src={user.user_metadata.avatar_url} 
+                    alt="Avatar" 
+                    className="w-8 h-8 rounded-full"
+                  />
+                ) : (
+                  <User className="w-5 h-5 text-gray-600" />
+                )}
+                <span className="text-sm font-medium text-gray-700">
+                  {user.user_metadata?.full_name || user.email.split('@')[0]}
+                </span>
+              </button>
+              
+              {/* User Dropdown Menu */}
+              <AnimatePresence>
+                {isUserMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50"
+                  >
+                    <Link
+                      href="/dashboard"
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <User className="w-4 h-4" />
+                      Dashboard
+                    </Link>
+                    <button
+                      onClick={handleSignOut}
+                      className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Logout
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ) : (
+            /* User is not logged in */
+            <>
+              <Link 
+                href="/login" 
+                className="text-gray-600 hover:text-black transition-colors duration-300 ease-out text-sm font-medium"
+              >
+                Login
+              </Link>
+              <Link 
+                href="/register" 
+                className="bg-transparent border-2 border-gray-800 text-gray-800 px-6 py-2 rounded-full hover:bg-gray-800 hover:text-white transition-all duration-300 ease-out text-sm font-medium transform hover:scale-105"
+              >
+                Sign in
+              </Link>
+            </>
+          )}
         </motion.div>
 
         {/* Mobile Hamburger Button */}
@@ -266,7 +344,7 @@ export default function Navbar() {
                 ))}
               </nav>
 
-              {/* Mobile Login Button */}
+              {/* Mobile Login/User Section */}
               <motion.div 
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -277,20 +355,66 @@ export default function Navbar() {
                 }}
                 className="pt-6 border-t border-white/30 space-y-4"
               >
-                <Link
-                  href="/login"
-                  onClick={closeMenu}
-                  className="block text-gray-600 hover:text-black py-3 px-4 text-center transition-all duration-300 ease-out font-medium hover:transform hover:scale-105"
-                >
-                  Login
-                </Link>
-                <Link
-                  href="/register"
-                  onClick={closeMenu}
-                  className="block bg-transparent border-2 border-gray-800/90 text-gray-800 px-4 py-3 rounded-full text-center hover:bg-gray-800/90 hover:text-white transition-all duration-300 ease-out font-medium backdrop-blur-sm transform hover:scale-105"
-                >
-                  Sign in
-                </Link>
+                {user ? (
+                  /* Mobile User Menu */
+                  <>
+                    <div className="flex items-center gap-3 px-4 py-3 bg-white/20 rounded-lg">
+                      {user.user_metadata?.avatar_url ? (
+                        <img 
+                          src={user.user_metadata.avatar_url} 
+                          alt="Avatar" 
+                          className="w-10 h-10 rounded-full"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                          <User className="w-5 h-5 text-gray-600" />
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-medium text-gray-800">
+                          {user.user_metadata?.full_name || user.email.split('@')[0]}
+                        </p>
+                        <p className="text-sm text-gray-600">{user.email}</p>
+                      </div>
+                    </div>
+                    <Link
+                      href="/dashboard"
+                      onClick={closeMenu}
+                      className="flex items-center gap-2 px-4 py-3 text-gray-600 hover:text-black hover:bg-white/20 rounded-lg transition-all duration-300"
+                    >
+                      <User className="w-5 h-5" />
+                      Dashboard
+                    </Link>
+                    <button
+                      onClick={() => {
+                        handleSignOut();
+                        closeMenu();
+                      }}
+                      className="flex items-center gap-2 w-full px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-300"
+                    >
+                      <LogOut className="w-5 h-5" />
+                      Logout
+                    </button>
+                  </>
+                ) : (
+                  /* Mobile Login Buttons */
+                  <>
+                    <Link
+                      href="/login"
+                      onClick={closeMenu}
+                      className="block text-gray-600 hover:text-black py-3 px-4 text-center transition-all duration-300 ease-out font-medium hover:transform hover:scale-105"
+                    >
+                      Login
+                    </Link>
+                    <Link
+                      href="/register"
+                      onClick={closeMenu}
+                      className="block bg-transparent border-2 border-gray-800/90 text-gray-800 px-4 py-3 rounded-full text-center hover:bg-gray-800/90 hover:text-white transition-all duration-300 ease-out font-medium backdrop-blur-sm transform hover:scale-105"
+                    >
+                      Sign in
+                    </Link>
+                  </>
+                )}
               </motion.div>
             </div>
           </motion.div>
