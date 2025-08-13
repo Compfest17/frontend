@@ -189,7 +189,7 @@ export default function HeroSection() {
               className="relative w-full max-w-sm lg:max-w-md xl:max-w-lg"
             >
               <img 
-                src="/hero-img.svg" 
+                src="/heroimg.svg" 
                 alt="Hero illustration" 
                 className='h-auto w-full' 
               />
