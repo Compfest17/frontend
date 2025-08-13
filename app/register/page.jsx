@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Eye, EyeOff } from 'lucide-react';
 import { signUp, signInWithGoogle } from '@/lib/supabase-auth';
 import { validatePassword, getAuthError } from '@/lib/authUtils';
 import PasswordStrength from '@/components/PasswordStrength';
+import BannerSlider from '@/components/auth/BannerSlider';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -18,6 +20,8 @@ export default function RegisterPage() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const router = useRouter();
 
   const handleInputChange = (e) => {
@@ -56,7 +60,22 @@ export default function RegisterPage() {
       );
 
       if (error) {
-        throw new Error(error.message);
+        // Handle specific error cases
+        if (error.message.includes('User already registered') || 
+            error.message.includes('already registered') ||
+            error.message.includes('already been registered')) {
+          setError('Email sudah terdaftar. Silakan gunakan email lain atau login.');
+        } else if (error.message.includes('invalid') && error.message.includes('email')) {
+          setError('Format email tidak valid. Silakan masukkan email yang benar.');
+        } else if (error.message.includes('Password') || error.message.includes('password')) {
+          setError('Password tidak memenuhi kriteria. Pastikan minimal 8 karakter dengan kombinasi huruf dan angka.');
+        } else if (error.message.includes('Network') || error.message.includes('network')) {
+          setError('Koneksi bermasalah. Silakan coba lagi.');
+        } else {
+          setError(getAuthError(error, 'register'));
+        }
+        setIsLoading(false);
+        return;
       }
 
       console.log('Register successful:', data);
@@ -70,7 +89,21 @@ export default function RegisterPage() {
       }
     } catch (error) {
       console.error('Register failed:', error);
-      setError(getAuthError(error, 'register'));
+      
+      // Handle different error types
+      if (error.message.includes('User already registered') || 
+          error.message.includes('already registered') ||
+          error.message.includes('already been registered')) {
+        setError('Email sudah terdaftar. Silakan gunakan email lain atau login.');
+      } else if (error.message.includes('invalid') && error.message.includes('email')) {
+        setError('Format email tidak valid. Silakan masukkan email yang benar.');
+      } else if (error.message.includes('Password') || error.message.includes('password')) {
+        setError('Password tidak memenuhi kriteria. Pastikan minimal 8 karakter dengan kombinasi huruf dan angka.');
+      } else if (error.message.includes('Network') || error.message.includes('network')) {
+        setError('Koneksi bermasalah. Silakan coba lagi.');
+      } else {
+        setError(getAuthError(error, 'register'));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -84,17 +117,51 @@ export default function RegisterPage() {
       const { data, error } = await signInWithGoogle();
       
       if (error) {
-        setError(getAuthError(error, 'register'));
+        if (error.message.includes('popup') || error.message.includes('cancelled')) {
+          setError('Login dengan Google dibatalkan. Silakan coba lagi.');
+        } else if (error.message.includes('blocked') || error.message.includes('popup_blocked')) {
+          setError('Popup diblokir browser. Silakan izinkan popup dan coba lagi.');
+        } else {
+          setError(getAuthError(error, 'register'));
+        }
         return;
       }
       
     } catch (error) {
       console.error('Google sign up failed:', error);
-      setError(getAuthError(error, 'register'));
+      
+      if (error.message.includes('popup') || error.message.includes('cancelled')) {
+        setError('Login dengan Google dibatalkan. Silakan coba lagi.');
+      } else if (error.message.includes('blocked') || error.message.includes('popup_blocked')) {
+        setError('Popup diblokir browser. Silakan izinkan popup dan coba lagi.');
+      } else {
+        setError(getAuthError(error, 'register'));
+      }
     } finally {
       setIsGoogleLoading(false);
     }
   };
+
+  const bannerSlides = [
+    {
+      title: "Bergabung dengan Komunitas",
+      subtitle: "Mari membangun infrastruktur yang lebih baik",
+      image: "/image/auth/Slider1.jpg",
+      alt: "Join the community"
+    },
+    {
+      title: "Suara Anda Penting",
+      subtitle: "Setiap laporan berkontribusi untuk kemajuan kota",
+      image: "/image/auth/Slider2.jpg",
+      alt: "Your voice matters"
+    },
+    {
+      title: "Infrastruktur Berkelanjutan",
+      subtitle: "Bersama menciptakan lingkungan yang nyaman",
+      image: "/image/auth/Slider3.png",
+      alt: "Sustainable infrastructure"
+    }
+  ];
 
   return (
     <div className="h-screen flex overflow-hidden">
@@ -110,8 +177,8 @@ export default function RegisterPage() {
         </Link>
 
         <div className="w-full max-w-md">
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold mb-2" style={{ color: '#DD761C' }}>
+          <div className="mb-8 text-center">
+            <h1 className="text-4xl font-bold mb-4" style={{ color: '#DD761C' }}>
               Daftar Akun
             </h1>
             <p className="text-gray-600">
@@ -183,22 +250,36 @@ export default function RegisterPage() {
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 PASSWORD *
               </label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleInputChange}
-                placeholder="Masukkan password"
-                className="w-full px-0 py-3 border-0 border-b-2 border-gray-300 focus:outline-none bg-transparent text-gray-900 placeholder-gray-500 transition-colors duration-200"
-                style={{ 
-                  borderBottomColor: formData.password ? '#DD761C' : undefined,
-                }}
-                onFocus={(e) => e.target.style.borderBottomColor = '#DD761C'}
-                onBlur={(e) => e.target.style.borderBottomColor = formData.password ? '#DD761C' : '#d1d5db'}
-                required
-                disabled={isLoading}
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  placeholder="Masukkan password"
+                  className="w-full px-0 py-3 pr-10 border-0 border-b-2 border-gray-300 focus:outline-none bg-transparent text-gray-900 placeholder-gray-500 transition-colors duration-200"
+                  style={{ 
+                    borderBottomColor: formData.password ? '#DD761C' : undefined,
+                  }}
+                  onFocus={(e) => e.target.style.borderBottomColor = '#DD761C'}
+                  onBlur={(e) => e.target.style.borderBottomColor = formData.password ? '#DD761C' : '#d1d5db'}
+                  required
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-0 top-3 text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <Eye className="w-5 h-5" />
+                  ) : (
+                    <EyeOff className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
               <PasswordStrength password={formData.password} />
             </div>
 
@@ -206,32 +287,48 @@ export default function RegisterPage() {
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
                 KONFIRMASI PASSWORD *
               </label>
-              <input
-                type="password"
-                id="confirmPassword"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleInputChange}
-                placeholder="Konfirmasi password"
-                className="w-full px-0 py-3 border-0 border-b-2 border-gray-300 focus:outline-none bg-transparent text-gray-900 placeholder-gray-500 transition-colors duration-200"
-                style={{ 
-                  borderBottomColor: formData.confirmPassword ? '#DD761C' : undefined,
-                }}
-                onFocus={(e) => e.target.style.borderBottomColor = '#DD761C'}
-                onBlur={(e) => e.target.style.borderBottomColor = formData.confirmPassword ? '#DD761C' : '#d1d5db'}
-                required
-                disabled={isLoading}
-              />
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  placeholder="Konfirmasi password"
+                  className="w-full px-0 py-3 pr-10 border-0 border-b-2 border-gray-300 focus:outline-none bg-transparent text-gray-900 placeholder-gray-500 transition-colors duration-200"
+                  style={{ 
+                    borderBottomColor: formData.confirmPassword ? '#DD761C' : undefined,
+                  }}
+                  onFocus={(e) => e.target.style.borderBottomColor = '#DD761C'}
+                  onBlur={(e) => e.target.style.borderBottomColor = formData.confirmPassword ? '#DD761C' : '#d1d5db'}
+                  required
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-0 top-3 text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                  tabIndex={-1}
+                >
+                  {showConfirmPassword ? (
+                    <Eye className="w-5 h-5" />
+                  ) : (
+                    <EyeOff className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full text-white font-medium py-4 rounded-full transition-all duration-200 hover:opacity-90 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ backgroundColor: '#DD761C' }}
-            >
-              {isLoading ? 'Creating Account...' : 'Sign Up'}
-            </button>
+            <div className="pt-4">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full text-white font-medium py-4 rounded-full transition-all duration-200 hover:opacity-90 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: '#DD761C' }}
+              >
+                {isLoading ? 'Creating Account...' : 'Sign Up'}
+              </button>
+            </div>
 
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
@@ -264,35 +361,7 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      <div className="hidden lg:flex flex-1 relative h-screen">
-        <div className="absolute inset-0 bg-black bg-opacity-40"></div>
-        
-        <div className="absolute inset-0">
-          <img
-            src="/image/Rectangle.png"
-            alt="Infrastructure"
-            className="w-full h-full object-cover object-center"
-          />
-        </div>
-
-        <div className="relative z-10 flex flex-col justify-center items-start p-12 text-white w-full">
-          <div className="max-w-md">
-            <h2 className="text-4xl font-bold mb-4 leading-tight">
-              Bergabung dengan Komunitas
-            </h2>
-            <div className="mb-8">
-              <p className="text-lg font-medium">GatotKota</p>
-              <p className="text-sm opacity-90">Mari membangun infrastruktur yang lebih baik</p>
-            </div>
-            
-            <div className="flex space-x-2">
-              <div className="w-3 h-3 rounded-full bg-white bg-opacity-50"></div>
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#DD761C' }}></div>
-              <div className="w-3 h-3 rounded-full bg-white bg-opacity-30"></div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <BannerSlider slides={bannerSlides} />
     </div>
   );
 }
