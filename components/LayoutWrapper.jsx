@@ -7,6 +7,12 @@ import Navbar from './Navbar';
 export default function LayoutWrapper({ children }) {
   const pathname = usePathname();
 
+  const authPages = ['/login', '/register', '/forgot-password', '/auth/reset-password'];
+  const isAuthPage = authPages.includes(pathname);
+
+  if (isAuthPage) {
+    return children; 
+  }
   
   return (
     <>
