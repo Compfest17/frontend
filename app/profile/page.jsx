@@ -15,7 +15,7 @@ export default function ProfilePage() {
         <div className="py-3 md:pl-11 flex flex-col md:justify-start justify-center text-center md:text-left">
             <h3 className="font-bold">Wiro Sableng</h3>
             <p>Member Luar Biasa</p>
-            <p className="text-amber-600">(Logo) 1430 poin</p>
+            <p className="text-amber-600">(Logo) 1430 poins</p>
         </div>
         <div className="md:px-11 ml-5 md:ml-0 mt-15">
           <a href="" className="md:mr-10 mr-7">Postingan</a>
