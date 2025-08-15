@@ -5,6 +5,7 @@ import BannerFormulir from './components/BannerFormulir';
 import Formulir from './components/Formulir';
 import ModalAuth from '@/components/formulir/ModalAuth';
 import { getCurrentUser } from '@/lib/supabase-auth';
+import { PendingUploadsProvider } from '@/contexts/PendingUploadsContext';
 
 export default function FormulirPage() {
   const [user, setUser] = useState(null);
@@ -20,7 +21,6 @@ export default function FormulirPage() {
           setShowAuthModal(true);
         }
       } catch (error) {
-        console.log('No authenticated user');
         setUser(null);
         setShowAuthModal(true);
       } finally {
@@ -48,26 +48,28 @@ export default function FormulirPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white relative">
-      <BannerFormulir />
-      <div className="container mx-auto p-4 sm:p-6 mt-8 relative z-40">
-        <Formulir user={user} onAuthRequired={handleShowAuthModal} />
-      </div>
-      
-      {/* Background Image */}
-      <div className="absolute bottom-0 left-0 w-full z-0 pointer-events-none">
-        <img 
-          src="/image/formulir/BackgroundFormulir.svg"
-          alt="Background"
-          className="w-full h-auto"
-        />
-      </div>
-      
-      {/* Spacer to prevent footer overlap */}
-      <div className="h-32"></div>
+    <PendingUploadsProvider>
+      <div className="min-h-screen bg-white relative">
+        <BannerFormulir />
+        <div className="container mx-auto p-4 sm:p-6 mt-8 relative z-40">
+          <Formulir user={user} onAuthRequired={handleShowAuthModal} />
+        </div>
+        
+        {/* Background Image */}
+        <div className="absolute bottom-0 left-0 w-full z-0 pointer-events-none">
+          <img 
+            src="/image/formulir/BackgroundFormulir.svg"
+            alt="Background"
+            className="w-full h-auto"
+          />
+        </div>
+        
+        {/* Spacer to prevent footer overlap */}
+        <div className="h-32"></div>
 
-      {/* Auth Modal */}
-      <ModalAuth isOpen={showAuthModal} onClose={handleCloseModal} />
-    </div>
+        {/* Auth Modal */}
+        <ModalAuth isOpen={showAuthModal} onClose={handleCloseModal} />
+      </div>
+    </PendingUploadsProvider>
   );
 }
