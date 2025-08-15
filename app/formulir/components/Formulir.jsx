@@ -3,7 +3,7 @@
 import { MapPin, Upload, Phone, X } from 'lucide-react';
 import { useState } from 'react';
 
-export default function Formulir() {
+export default function Formulir({ user, onAuthRequired }) {
   const [uploadedFiles, setUploadedFiles] = useState([]);
 
   const handleFileUpload = (event) => {
@@ -44,9 +44,22 @@ export default function Formulir() {
     event.preventDefault();
   };
 
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    
+    // Check if user is authenticated only on submit
+    if (!user) {
+      onAuthRequired();
+      return;
+    }
+    
+    // Handle form submission
+    console.log('Form submitted');
+  };
+
   return (
     <div className="bg-white p-6 sm:p-8 rounded-xl shadow-sm max-w-2xl mx-auto">
-      <form className="space-y-6">
+      <form className="space-y-6" onSubmit={handleSubmit}>
         {/* Judul Laporan */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -112,7 +125,7 @@ export default function Formulir() {
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Foto Jalan Rusak
           </label>
-          <div 
+          <div
             className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors"
             onDrop={handleDrop}
             onDragOver={handleDragOver}
@@ -120,7 +133,7 @@ export default function Formulir() {
             <Upload size={48} className="text-gray-400 mb-2 mx-auto" />
             <p className="text-sm text-gray-600 mb-1">
               Seret & lepas foto di sini, atau{' '}
-              <label className="font-medium cursor-pointer" style={{color: '#DD761C'}}>
+              <label className="font-medium cursor-pointer" style={{ color: '#DD761C' }}>
                 Pilih Foto
                 <input
                   type="file"
@@ -216,7 +229,7 @@ export default function Formulir() {
                 name="privacy"
                 value="anonymous"
                 className="mr-2"
-                style={{accentColor: '#DD761C'}}
+                style={{ accentColor: '#DD761C' }}
               />
               <span className="text-sm text-gray-700">Anonim (identitas disembunyikan)</span>
             </label>
@@ -226,7 +239,7 @@ export default function Formulir() {
                 name="privacy"
                 value="public"
                 className="mr-2"
-                style={{accentColor: '#DD761C'}}
+                style={{ accentColor: '#DD761C' }}
               />
               <span className="text-sm text-gray-700">Tampilkan Identitas</span>
             </label>

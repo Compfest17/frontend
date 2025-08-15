@@ -1,12 +1,57 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import BannerFormulir from './components/BannerFormulir';
 import Formulir from './components/Formulir';
+import ModalAuth from '@/components/formulir/ModalAuth';
+import { getCurrentUser } from '@/lib/supabase-auth';
 
 export default function FormulirPage() {
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  useEffect(() => {
+    const checkUser = async () => {
+      try {
+        const { user } = await getCurrentUser();
+        setUser(user);
+        if (!user) {
+          setShowAuthModal(true);
+        }
+      } catch (error) {
+        console.log('No authenticated user');
+        setUser(null);
+        setShowAuthModal(true);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkUser();
+  }, []);
+
+  const handleCloseModal = () => {
+    setShowAuthModal(false);
+  };
+
+  const handleShowAuthModal = () => {
+    setShowAuthModal(true);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#DD761C]"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white relative">
       <BannerFormulir />
       <div className="container mx-auto p-4 sm:p-6 mt-8 relative z-40">
-        <Formulir />
+        <Formulir user={user} onAuthRequired={handleShowAuthModal} />
       </div>
       
       {/* Background Image */}
@@ -20,6 +65,9 @@ export default function FormulirPage() {
       
       {/* Spacer to prevent footer overlap */}
       <div className="h-32"></div>
+
+      {/* Auth Modal */}
+      <ModalAuth isOpen={showAuthModal} onClose={handleCloseModal} />
     </div>
   );
 }
