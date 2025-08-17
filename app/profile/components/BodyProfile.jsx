@@ -27,9 +27,6 @@ export default function BodyProfile() {
 
         <div onClick={() => setActiveTab(2)} className={`${activeTab == 2? "text-amber-600  border-amber-600 border-b-1":"border-white border-b-1"}  hover:text-amber-600  w-fit cursor-pointer smooth`}>Simpan</div>
 
-
-    
-
       </div>
       {/* Postingan */}
       <div className={`${activeTab ==1? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8":"hidden"}`}>
