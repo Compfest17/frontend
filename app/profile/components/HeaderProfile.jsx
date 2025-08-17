@@ -1,4 +1,4 @@
-export default function BannerForum() {
+export default function HeaderProfile() {
   return (
     <div className="mx-auto p-4 sm:p-6">
         <div className="h-30 md:h-40 w-full overflow-hidden rounded-2xl">

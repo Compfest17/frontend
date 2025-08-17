@@ -1,11 +1,11 @@
-import BannerForum from './components/BannerForum';
-import ForumSection from './components/ForumSection';
+import HeaderProfile from './components/HeaderProfile';
+import BodyProfile from './components/BodyProfile';
 
 export default function ForumPage() {
   return (
     <div>
-      <BannerForum />
-      <ForumSection />
+      <HeaderProfile/>
+      <BodyProfile/>
     </div>
   );
 }
