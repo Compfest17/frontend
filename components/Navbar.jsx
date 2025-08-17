@@ -20,6 +20,7 @@ export default function Navbar() {
     { name: 'Dashboard', href: '/dashboard' },
     { name: 'Formulir', href: '/formulir' },
     { name: 'Forum', href: '/forum' },
+    { name: 'About Us', href: '/about' },
   ];
 
   useEffect(() => {
@@ -38,7 +39,6 @@ export default function Navbar() {
       }
     };
 
-    // Set loaded state after component mounts with small delay for smoother effect
     const timer = setTimeout(() => {
       setIsLoaded(true);
     }, 100);
