@@ -1,0 +1,17 @@
+[
+  {
+    "id": 1,
+    "kategori": "Laporan Baru",
+    "jumlah": 86
+  },
+  {
+    "id": 2,
+    "kategori": "Total Laporan",
+    "jumlah": 546
+  },
+  {
+    "id": 3,
+    "kategori": "Laporan Selesai",
+    "jumlah": 1400
+  }
+]
