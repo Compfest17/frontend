@@ -1,3 +1,4 @@
+import {Award} from 'lucide-react';
 export default function HeaderProfile() {
   return (
     <div className="mx-auto p-4 sm:p-6">
@@ -15,7 +16,7 @@ export default function HeaderProfile() {
         <div className="py-3 md:pl-11 flex flex-col md:justify-start justify-center text-center md:text-left">
             <h3 className="font-bold">Wiro Sableng</h3>
             <p>Member Luar Biasa</p>
-            <p className="text-amber-600">(Logo) 1430 poins</p>
+            <p className="text-amber-600 flex items-center gap-1"><Award size={18}/>1430 Points</p>
         </div>
     </div>
   )
