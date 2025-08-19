@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import forumData from '../../data/forumData.json';
 
-export default function ForumHeader({ onSearch, onTabChange }) {
+export default function ForumHeader({ onSearch, onTabChange, onStatusFilter }) {
   const [activeTab, setActiveTab] = useState('Untuk Anda');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -26,21 +26,10 @@ export default function ForumHeader({ onSearch, onTabChange }) {
 
   // Dynamic tabs based on screen size
   const tabs = isMobile 
-    ? ['Untuk Anda', 'Mengikuti', 'Status', 'Trending']
-    : ['Untuk Anda', 'Mengikuti', 'Status'];
+    ? ['Untuk Anda', 'Status', 'Trending']
+    : ['Untuk Anda', 'Status'];
 
   const statusOptions = ['Semua Status', 'Sedang di proses', 'Selesai', 'Batal'];
-
-  // Get trending discussions from forumData.json
-  const trendingDiscussions = forumData.posts.slice(0, 4).map(post => ({
-    author: post.author,
-    username: `@${post.author.toLowerCase().replace(/\s+/g, '')}`,
-    date: post.date,
-    title: post.title,
-    content: post.content,
-    comments: post.comments,
-    likes: post.likes
-  }));
 
   const handleSearch = (e) => {
     const value = e.target.value;
@@ -67,6 +56,11 @@ export default function ForumHeader({ onSearch, onTabChange }) {
   const handleStatusSelect = (status) => {
     setSelectedStatus(status);
     setIsStatusDropdownOpen(false);
+    
+    // Notify parent component about status filter change
+    if (onStatusFilter) {
+      onStatusFilter(status);
+    }
   };
 
   // Scroll detection
@@ -174,61 +168,7 @@ export default function ForumHeader({ onSearch, onTabChange }) {
         )}
       </div>
 
-      {/* Trending Content - Only show on mobile/tablet when Trending tab is active */}
-      {activeTab === 'Trending' && isMobile && (
-        <div className="bg-white border-b border-gray-200">
-          <div className="p-4">
-            <h3 className="font-bold text-lg mb-4">Sedang hangat dibicarakan</h3>
-            <div className="space-y-4">
-              {trendingDiscussions.map((discussion, index) => (
-                <div key={index} className="hover:bg-gray-50 p-3 rounded-lg cursor-pointer -mx-1 transition-colors">
-                  {/* Author Info */}
-                  <div className="flex items-center gap-2 mb-2">
-                    <img 
-                      src="/image/forum/test/profil-test.jpg" 
-                      alt={discussion.author}
-                      className="w-6 h-6 rounded-full"
-                    />
-                    <div className="flex items-center gap-1 text-xs text-gray-600">
-                      <span className="font-semibold text-gray-900">{discussion.author}</span>
-                      <span>{discussion.username}</span>
-                      <span>·</span>
-                      <span>{discussion.date}</span>
-                    </div>
-                  </div>
-                  
-                  {/* Content */}
-                  <div className="mb-2">
-                    <h4 className="font-semibold text-sm text-gray-900 mb-1">{discussion.title}</h4>
-                    <p className="text-xs text-gray-600 line-clamp-3 leading-relaxed">
-                      {discussion.content}
-                    </p>
-                  </div>
-                  
-                  {/* Stats */}
-                  <div className="flex items-center gap-4 text-xs text-gray-500">
-                    <div className="flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                      </svg>
-                      <span>{discussion.comments}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                      </svg>
-                      <span>{discussion.likes}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <button className="text-orange-500 text-sm mt-3 hover:underline">
-              Tampilkan lebih banyak
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Trending content is now handled in ForumSection */}
     </div>
   );
 }

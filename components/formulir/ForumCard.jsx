@@ -1,26 +1,46 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import StatusBadge from './StatusBadge';
 
 export default function ForumCard({ post }) {
   const router = useRouter();
   const [liked, setLiked] = useState(false);
+  const [disliked, setDisliked] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [expandedReplies, setExpandedReplies] = useState({});
   const [currentCommentIndex, setCurrentCommentIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  
+  // Touch/Swipe states
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  const carouselRef = useRef(null);
+
+  // Get images array, fallback to single image or default
+  const images = post.images || (post.image ? [post.image] : ['/image/forum/test/article-test.jpg']);
+
+  // Minimum swipe distance to trigger image change
+  const minSwipeDistance = 50;
 
   const handleCardClick = (e) => {
-    // Prevent navigation when clicking on action buttons
-    if (e.target.closest('.action-button')) return;
+    // Prevent navigation when clicking on action buttons or carousel controls
+    if (e.target.closest('.action-button') || e.target.closest('.carousel-control')) return;
     router.push(`/forum/${post.id}`);
   };
 
   const handleLike = (e) => {
     e.stopPropagation();
+    if (disliked) setDisliked(false); // Remove dislike if liked
     setLiked(!liked);
+  };
+
+  const handleDislike = (e) => {
+    e.stopPropagation();
+    if (liked) setLiked(false); // Remove like if disliked
+    setDisliked(!disliked);
   };
 
   const handleBookmark = (e) => {
@@ -38,6 +58,60 @@ export default function ForumCard({ post }) {
       ...prev,
       [commentId]: !prev[commentId]
     }));
+  };
+
+  const handlePrevImage = (e) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => 
+      prev === 0 ? images.length - 1 : prev - 1
+    );
+  };
+
+  const handleNextImage = (e) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => 
+      prev === images.length - 1 ? 0 : prev + 1
+    );
+  };
+
+  const handleDotClick = (index, e) => {
+    e.stopPropagation();
+    setCurrentImageIndex(index);
+  };
+
+  // Touch handlers for swipe functionality
+  const onTouchStart = (e) => {
+    e.stopPropagation();
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e) => {
+    e.stopPropagation();
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = (e) => {
+    e.stopPropagation();
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && images.length > 1) {
+      // Swipe left - next image
+      setCurrentImageIndex((prev) => 
+        prev === images.length - 1 ? 0 : prev + 1
+      );
+    }
+    
+    if (isRightSwipe && images.length > 1) {
+      // Swipe right - previous image
+      setCurrentImageIndex((prev) => 
+        prev === 0 ? images.length - 1 : prev - 1
+      );
+    }
   };
 
   // Rotating comments effect
@@ -101,14 +175,78 @@ export default function ForumCard({ post }) {
               )}
             </div>
             
-            {/* Image */}
-            {post.image && (
-              <div className="mb-3 rounded-2xl overflow-hidden border border-gray-200">
-                <img 
-                  src={post.image} 
-                  alt={post.title}
-                  className="w-full max-h-60 sm:max-h-80 object-cover"
-                />
+            {/* Image Carousel - Simple Version */}
+            {images && images.length > 0 && (
+              <div className="mb-3 rounded-2xl overflow-hidden border border-gray-200 relative group">
+                {/* Main Image with Touch Support */}
+                <div 
+                  ref={carouselRef}
+                  className="relative select-none"
+                  onTouchStart={onTouchStart}
+                  onTouchMove={onTouchMove}
+                  onTouchEnd={onTouchEnd}
+                >
+                  <img 
+                    src={images[currentImageIndex]} 
+                    alt={`${post.title} - Image ${currentImageIndex + 1}`}
+                    className="w-full max-h-60 sm:max-h-80 object-cover pointer-events-none"
+                    draggable={false}
+                  />
+                  
+                  {/* Navigation Arrows - only show on desktop if more than 1 image */}
+                  {images.length > 1 && (
+                    <>
+                      {/* Previous Button - Hidden on mobile, shown on hover for desktop */}
+                      <button
+                        onClick={handlePrevImage}
+                        className="carousel-control absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 hidden sm:block"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </button>
+                      
+                      {/* Next Button - Hidden on mobile, shown on hover for desktop */}
+                      <button
+                        onClick={handleNextImage}
+                        className="carousel-control absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 hidden sm:block"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                      
+                      {/* Image Counter */}
+                      <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
+                        {currentImageIndex + 1}/{images.length}
+                      </div>
+
+                      {/* Swipe Hint for Mobile */}
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none sm:hidden">
+                        <div className="bg-black/30 text-white text-xs px-3 py-1 rounded-full opacity-50 animate-pulse">
+                          Geser untuk melihat foto lain
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+                
+                {/* Dots Indicator - always visible if more than 1 image */}
+                {images.length > 1 && (
+                  <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1">
+                    {images.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={(e) => handleDotClick(index, e)}
+                        className={`carousel-control w-2 h-2 rounded-full transition-all duration-200 ${
+                          index === currentImageIndex 
+                            ? 'bg-white' 
+                            : 'bg-white/50 hover:bg-white/75'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
             
@@ -122,8 +260,9 @@ export default function ForumCard({ post }) {
               </div>
             )}
             
-            {/* Actions */}
+            {/* Actions - Comment, Views, Thumbs Up/Down, Save */}
             <div className="flex items-center justify-between max-w-sm">
+              {/* Comment Button */}
               <button 
                 onClick={handleCommentsClick}
                 className="action-button flex items-center gap-1 sm:gap-2 text-gray-500 hover:text-blue-500 transition-colors group"
@@ -136,40 +275,52 @@ export default function ForumCard({ post }) {
                 <span className="text-xs sm:text-sm">{post.comments || 0}</span>
               </button>
               
-              <button className="action-button flex items-center gap-1 sm:gap-2 text-gray-500 hover:text-green-500 transition-colors group">
-                <div className="p-1.5 sm:p-2 rounded-full group-hover:bg-green-50 transition-colors">
+              {/* Views Button */}
+              <button className="action-button flex items-center gap-1 sm:gap-2 text-gray-500 hover:text-purple-500 transition-colors group">
+                <div className="p-1.5 sm:p-2 rounded-full group-hover:bg-purple-50 transition-colors">
                   <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                   </svg>
                 </div>
+                <span className="text-xs sm:text-sm">{post.views || 0}</span>
               </button>
               
+              {/* Thumbs Up Button */}
               <button 
                 onClick={handleLike}
                 className={`action-button flex items-center gap-1 sm:gap-2 transition-colors group ${
-                  liked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
+                  liked ? 'text-green-500' : 'text-gray-500 hover:text-green-500'
                 }`}
               >
-                <div className="p-1.5 sm:p-2 rounded-full group-hover:bg-red-50 transition-colors">
+                <div className="p-1.5 sm:p-2 rounded-full group-hover:bg-green-50 transition-colors">
                   <svg className="w-4 h-4 sm:w-5 sm:h-5" fill={liked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
                   </svg>
                 </div>
                 <span className="text-xs sm:text-sm">{(post.likes || 0) + (liked ? 1 : 0)}</span>
               </button>
               
-              <button className="action-button flex items-center gap-1 sm:gap-2 text-gray-500 hover:text-blue-500 transition-colors group">
-                <div className="p-1.5 sm:p-2 rounded-full group-hover:bg-blue-50 transition-colors">
-                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              {/* Thumbs Down Button */}
+              <button 
+                onClick={handleDislike}
+                className={`action-button flex items-center gap-1 sm:gap-2 transition-colors group ${
+                  disliked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
+                }`}
+              >
+                <div className="p-1.5 sm:p-2 rounded-full group-hover:bg-red-50 transition-colors">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill={disliked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018c.163 0 .326.02.485.06L17 4m-7 10v2a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
                   </svg>
                 </div>
+                <span className="text-xs sm:text-sm">{(post.dislikes || 0) + (disliked ? 1 : 0)}</span>
               </button>
               
+              {/* Save/Bookmark Button */}
               <button 
                 onClick={handleBookmark}
-                className={`action-button text-gray-500 hover:text-orange-500 transition-colors group ${
-                  bookmarked ? 'text-orange-500' : ''
+                className={`action-button transition-colors group ${
+                  bookmarked ? 'text-orange-500' : 'text-gray-500 hover:text-orange-500'
                 }`}
               >
                 <div className="p-1.5 sm:p-2 rounded-full group-hover:bg-orange-50 transition-colors">
