@@ -1,5 +1,5 @@
 import HeroSection from './components/HeroSection';
-import SectionTwo from './components/SectionTwo';
+import SectionTwo from './components/KomunitasSection';
 import FaqSection from './components/FaqSection';
 
 export default function Home() {
