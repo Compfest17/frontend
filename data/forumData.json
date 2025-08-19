@@ -3,7 +3,11 @@
     {
       "id": 1,
       "title": "Jalan berlubang parahh banget",
-      "image": "/image/forum/test/article-test.jpg",
+      "images": [
+        "/image/forum/test/article-test.jpg",
+        "/image/forum/test/article-test2.jpg",
+        "/image/forum/test/article-test3.jpg"
+      ],
       "author": "John Doe",
       "authorRole": "Member Biasa",
       "date": "11 Agustus 2024",
@@ -14,6 +18,7 @@
       "likes": 145,
       "dislikes": 2,
       "comments": 800,
+      "views": 2340,
       "commentsList": [
         {
           "id": 1,
@@ -85,123 +90,150 @@
     {
       "id": 2,
       "title": "Lampu jalan mati sudah 2 minggu di Jalan Raya Kemang",
-      "image": "/image/forum/test/article-test.jpg",
+      "images": [
+        "/image/forum/test/article-test.jpg",
+        "/image/forum/test/article-test2.jpg"
+      ],
       "author": "Siti Nurhaliza",
       "date": "10 Agustus 2024",
       "location": "Jakarta Selatan",
       "content": "Lampu jalan di sepanjang Jalan Raya Kemang sudah mati selama 2 minggu. Sangat berbahaya untuk pejalan kaki di malam hari.",
+      "status": "selesai",
       "likes": 18,
-      "comments": 5
+      "comments": 5,
+      "views": 456
     },
     {
       "id": 3,
       "title": "Jalan berlubang parahh banget sampai lebar lubang 20 cm",
-      "image": "/image/forum/test/article-test.jpg",
+      "images": [
+        "/image/forum/test/article-test.jpg"
+      ],
       "author": "Prashant Kumar singh",
       "date": "11 Agustus 2024",
       "location": "Jakarta Selatan",
       "content": "Jalan di daerah saya sudah sangat parah kondisinya. Lubang-lubang besar bermunculan dan sangat berbahaya untuk pengendara motor maupun mobil.",
+      "status": "batal",
       "likes": 24,
-      "comments": 8
+      "comments": 8,
+      "views": 789
     },
     {
       "id": 4,
-      "title": "Jalan berlubang parahh banget sampai lebar lubang 20 cm",
+      "title": "Trotoar rusak membahayakan pejalan kaki",
       "image": "/image/forum/test/article-test.jpg",
-      "author": "Prashant Kumar singh",
-      "date": "11 Agustus 2024",
-      "location": "Jakarta Selatan",
-      "content": "Jalan di daerah saya sudah sangat parah kondisinya. Lubang-lubang besar bermunculan dan sangat berbahaya untuk pengendara motor maupun mobil.",
-      "likes": 24,
-      "comments": 8
+      "author": "Ahmad Fauzi",
+      "date": "9 Agustus 2024",
+      "location": "Jakarta Pusat",
+      "content": "Trotoar di depan mall sudah rusak parah, banyak yang berlubang dan tidak rata. Sangat berbahaya bagi pejalan kaki terutama lansia.",
+      "status": "sedang_proses",
+      "likes": 67,
+      "comments": 15,
+      "views": 521
     },
     {
       "id": 5,
-      "title": "Jalan berlubang parahh banget sampai lebar lubang 20 cm",
+      "title": "Drainase tersumbat menyebabkan banjir",
       "image": "/image/forum/test/article-test.jpg",
-      "author": "Prashant Kumar singh",
-      "date": "11 Agustus 2024",
-      "location": "Jakarta Selatan",
-      "content": "Jalan di daerah saya sudah sangat parah kondisinya. Lubang-lubang besar bermunculan dan sangat berbahaya untuk pengendara motor maupun mobil.",
-      "likes": 24,
-      "comments": 8
+      "author": "Maria Sari",
+      "date": "8 Agustus 2024",
+      "location": "Jakarta Barat",
+      "content": "Saluran air di komplom perumahan tersumbat sampah, setiap hujan selalu banjir. Perlu segera dibersihkan.",
+      "status": "selesai",
+      "likes": 89,
+      "comments": 22,
+      "views": 342
     },
     {
       "id": 6,
-      "title": "Jalan berlubang parahh banget sampai lebar lubang 20 cm",
+      "title": "Lampu traffic light tidak berfungsi",
       "image": "/image/forum/test/article-test.jpg",
-      "author": "Prashant Kumar singh",
-      "date": "11 Agustus 2024",
-      "location": "Jakarta Selatan",
-      "content": "Jalan di daerah saya sudah sangat parah kondisinya. Lubang-lubang besar bermunculan dan sangat berbahaya untuk pengendara motor maupun mobil.",
-      "likes": 24,
-      "comments": 8
+      "author": "Budi Santoso",
+      "date": "7 Agustus 2024",
+      "location": "Jakarta Timur",
+      "content": "Traffic light di persimpangan jalan utama mati total sudah 3 hari. Kemacetan parah dan rawan kecelakaan.",
+      "status": "batal",
+      "likes": 156,
+      "comments": 31,
+      "views": 678
     },
     {
       "id": 7,
-      "title": "Jalan berlubang parahh banget sampai lebar lubang 20 cm",
+      "title": "Jembatan penyeberangan rusak",
       "image": "/image/forum/test/article-test.jpg",
-      "author": "Prashant Kumar singh",
-      "date": "11 Agustus 2024",
+      "author": "Dewi Kartika",
+      "date": "6 Agustus 2024",
       "location": "Jakarta Selatan",
-      "content": "Jalan di daerah saya sudah sangat parah kondisinya. Lubang-lubang besar bermunculan dan sangat berbahaya untuk pengendara motor maupun mobil.",
-      "likes": 24,
-      "comments": 8
+      "content": "Jembatan penyeberangan dekat stasiun rusak, pegangan tangannya patah dan lantainya berlubang.",
+      "status": "sedang_proses",
+      "likes": 43,
+      "comments": 12,
+      "views": 934
     },
     {
       "id": 8,
-      "title": "Jalan berlubang parahh banget sampai lebar lubang 20 cm",
+      "title": "Pohon tumbang menghalangi jalan",
       "image": "/image/forum/test/article-test.jpg",
-      "author": "Prashant Kumar singh",
-      "date": "11 Agustus 2024",
-      "location": "Jakarta Selatan",
-      "content": "Jalan di daerah saya sudah sangat parah kondisinya. Lubang-lubang besar bermunculan dan sangat berbahaya untuk pengendara motor maupun mobil.",
-      "likes": 24,
-      "comments": 8
+      "author": "Rian Pratama",
+      "date": "5 Agustus 2024",
+      "location": "Jakarta Utara",
+      "content": "Pohon besar tumbang setelah hujan deras kemarin, sekarang menghalangi setengah badan jalan.",
+      "status": "selesai",
+      "likes": 201,
+      "comments": 45,
+      "views": 287
     },
     {
       "id": 9,
-      "title": "Jalan berlubang parahh banget sampai lebar lubang 20 cm",
+      "title": "Marka jalan sudah tidak terlihat",
       "image": "/image/forum/test/article-test.jpg",
-      "author": "Prashant Kumar singh",
-      "date": "11 Agustus 2024",
-      "location": "Jakarta Selatan",
-      "content": "Jalan di daerah saya sudah sangat parah kondisinya. Lubang-lubang besar bermunculan dan sangat berbahaya untuk pengendara motor maupun mobil.",
-      "likes": 24,
-      "comments": 8
+      "author": "Lisa Permata",
+      "date": "4 Agustus 2024",
+      "location": "Jakarta Pusat",
+      "content": "Marka jalan di sepanjang jalan protokol sudah pudar dan tidak terlihat, berbahaya saat malam hari.",
+      "status": "batal",
+      "likes": 78,
+      "comments": 18,
+      "views": 615
     },
     {
       "id": 10,
-      "title": "Jalan berlubang parahh banget sampai lebar lubang 20 cm",
+      "title": "Halte bus rusak dan kotor",
       "image": "/image/forum/test/article-test.jpg",
-      "author": "Prashant Kumar singh",
-      "date": "11 Agustus 2024",
-      "location": "Jakarta Selatan",
-      "content": "Jalan di daerah saya sudah sangat parah kondisinya. Lubang-lubang besar bermunculan dan sangat berbahaya untuk pengendara motor maupun mobil.",
-      "likes": 24,
-      "comments": 8
+      "author": "Hendro Wijaya",
+      "date": "3 Agustus 2024",
+      "location": "Jakarta Barat",
+      "content": "Halte bus di depan kantor sangat kotor dan atapnya bocor. Penumpang jadi tidak nyaman menunggu.",
+      "status": "sedang_proses",
+      "likes": 92,
+      "comments": 27,
+      "views": 472
     },
     {
       "id": 11,
-      "title": "Jalan berlubang parahh banget sampai lebar lubang 20 cm",
+      "title": "Pagar pembatas jalan patah",
       "image": "/image/forum/test/article-test.jpg",
-      "author": "Prashant Kumar singh",
-      "date": "11 Agustus 2024",
-      "location": "Jakarta Selatan",
-      "content": "Jalan di daerah saya sudah sangat parah kondisinya. Lubang-lubang besar bermunculan dan sangat berbahaya untuk pengendara motor maupun mobil.",
-      "likes": 24,
-      "comments": 8
+      "author": "Sinta Maharani",
+      "date": "2 Agustus 2024",
+      "location": "Jakarta Timur",
+      "content": "Pagar pembatas di tengah jalan patah karena kecelakaan, sekarang berbahaya karena tidak ada pembatas.",
+      "status": "selesai",
+      "likes": 134,
+      "comments": 33,
+      "views": 823
     },
     {
       "id": 12,
-      "title": "Jalan berlubang parahh banget sampai lebar lubang 20 cm",
+      "title": "Lubang got terbuka bahaya",
       "image": "/image/forum/test/article-test.jpg",
-      "author": "Prashant Kumar singh",
-      "date": "11 Agustus 2024",
+      "author": "Rudi Hermawan",
+      "date": "1 Agustus 2024",
       "location": "Jakarta Selatan",
-      "content": "Jalan di daerah saya sudah sangat parah kondisinya. Lubang-lubang besar bermunculan dan sangat berbahaya untuk pengendara motor maupun mobil.",
-      "likes": 24,
-      "comments": 8
+      "content": "Penutup saluran air hilang, sekarang lubang got terbuka lebar. Sangat berbahaya bagi pengendara motor.",
+      "status": "batal",
+      "likes": 167,
+      "comments": 29,
+      "views": 159
     }
   ]
 }
