@@ -4,7 +4,7 @@ import forumData from '../../data/forumData.json';
 
 export default function RightSidebar() {
   const router = useRouter();
-//test
+//testing
   // Get trending discussions from forumData.json
   const trendingDiscussions = [...forumData.posts]
     .sort((a, b) => (b.views || 0) - (a.views || 0))

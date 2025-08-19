@@ -77,7 +77,7 @@ export default function ForumSection() {
   };
 
   return (
-    <div className="w-full bg-white border-x border-gray-200 min-h-screen">
+    <div className="w-full max-w-2xl mx-auto lg:border-x border-gray-200 min-h-screen bg-white">
       <CarouselBanner />
       <ForumHeader 
         onSearch={handleSearch} 
@@ -93,8 +93,8 @@ export default function ForumSection() {
           ))}
           
           {/* Load More Button for Trending */}
-          <div className="p-4 text-center bg-white border-b border-gray-200">
-            <button className="w-full text-orange-500 text-sm font-medium py-3 hover:bg-orange-50 rounded-lg transition-colors border border-orange-200">
+          <div className="p-4 border-b border-gray-200 text-center">
+            <button className="text-orange-500 text-sm font-medium py-2 hover:bg-orange-50 px-4 rounded-lg transition-colors">
               Tampilkan lebih banyak
             </button>
           </div>
@@ -103,14 +103,14 @@ export default function ForumSection() {
         <>
           {/* Regular Posts */}
           {filteredPosts.length > 0 ? (
-            <div className="divide-y divide-gray-200 bg-white">
+            <div className="divide-y divide-gray-200">
               {filteredPosts.map((post) => (
                 <ForumCard key={post.id} post={post} />
               ))}
             </div>
           ) : (
             /* No Data State */
-            <div className="text-center py-16 bg-white border-b border-gray-200">
+            <div className="text-center py-16 border-b border-gray-200">
               <div className="max-w-md mx-auto">
                 <div className="mb-4">
                   <svg className="w-16 h-16 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -144,7 +144,7 @@ export default function ForumSection() {
 
           {/* Load more indicator for infinite scroll - only show when there are posts */}
           {filteredPosts.length > 0 && (
-            <div className="text-center py-6 bg-white border-t border-gray-200">
+            <div className="text-center py-8 border-b border-gray-200">
               <p className="text-gray-500 text-sm">
                 Menampilkan {filteredPosts.length} dari {posts.length} diskusi
               </p>
