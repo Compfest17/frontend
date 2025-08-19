@@ -293,7 +293,8 @@ export default function HeroSection() {
         <div className='flex flex-col md:flex-row mx-auto md:justify-center items-center md:gap-10 mt-20 gap-10 '>
         {Statistic.map((statistic) => (
           <div key={statistic.id} className='bg-white border-1 border-zinc-100 shadow-md w-45 px-5 py-7 rounded-xl'
-          data-aos="fade-up">
+          data-aos="fade-up"
+          data-aos-duration="1000">
             <h3 className='text-center text-4xl text-[#DD761C] font-semibold mb-2'>{statistic.jumlah} </h3>
             <p className='text-[#DD761C] text-base text-center'>{statistic.kategori}</p>
           </div>
