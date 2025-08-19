@@ -1,6 +1,6 @@
 'use client';
 import { notFound, useRouter } from 'next/navigation';
-import { use, useEffect, useState } from 'react';
+import { use, useEffect, useState, useRef } from 'react';
 import { ArrowLeft, Heart, ThumbsDown, Bookmark } from 'lucide-react';
 import forumData from '../../../data/forumData.json';
 import StatusBadge from '../../../components/formulir/StatusBadge';
@@ -11,7 +11,14 @@ export default function ForumPostPage({ params }) {
   const router = useRouter();
   const [post, setPost] = useState(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const resolvedParams = use(params);
+  
+  // Touch/Swipe states
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  const carouselRef = useRef(null);
+  const minSwipeDistance = 50;
 
   useEffect(() => {
     const foundPost = forumData.posts.find(p => p.id === parseInt(resolvedParams.id));
@@ -20,6 +27,51 @@ export default function ForumPostPage({ params }) {
     }
     setPost(foundPost);
   }, [resolvedParams.id]);
+
+  // Get images array
+  const images = post?.images || (post?.image ? [post.image] : []);
+
+  const handlePrevImage = () => {
+    setCurrentImageIndex((prev) => 
+      prev === 0 ? images.length - 1 : prev - 1
+    );
+  };
+
+  const handleNextImage = () => {
+    setCurrentImageIndex((prev) => 
+      prev === images.length - 1 ? 0 : prev + 1
+    );
+  };
+
+  const handleDotClick = (index) => {
+    setCurrentImageIndex(index);
+  };
+
+  // Touch handlers for swipe functionality
+  const onTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && images.length > 1) {
+      handleNextImage();
+    }
+    
+    if (isRightSwipe && images.length > 1) {
+      handlePrevImage();
+    }
+  };
 
   if (!post) {
     return <div>Loading...</div>;
@@ -54,14 +106,73 @@ export default function ForumPostPage({ params }) {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Main Content */}
             <div className="lg:col-span-2">
-              {/* Post Image */}
-              <div className="aspect-video relative mb-6 rounded-lg overflow-hidden">
-                <img 
-                  src={post.image} 
-                  alt={post.title}
-                  className="w-full h-full object-cover"
-                />
-              </div>
+              {/* Post Image Carousel - Simple Version */}
+              {images && images.length > 0 && (
+                <div className="aspect-video relative mb-6 rounded-lg overflow-hidden group">
+                  <div
+                    ref={carouselRef}
+                    className="relative h-full select-none"
+                    onTouchStart={onTouchStart}
+                    onTouchMove={onTouchMove}
+                    onTouchEnd={onTouchEnd}
+                  >
+                    <img 
+                      src={images[currentImageIndex]} 
+                      alt={`${post.title} - Image ${currentImageIndex + 1}`}
+                      className="w-full h-full object-cover pointer-events-none"
+                      draggable={false}
+                    />
+                    
+                    {/* Navigation for multiple images - Desktop only */}
+                    {images.length > 1 && (
+                      <>
+                        <button
+                          onClick={handlePrevImage}
+                          className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hidden sm:block"
+                        >
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                          </svg>
+                        </button>
+                        
+                        <button
+                          onClick={handleNextImage}
+                          className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hidden sm:block"
+                        >
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </button>
+                        
+                        <div className="absolute top-4 right-4 bg-black/50 text-white text-sm px-3 py-1 rounded-full">
+                          {currentImageIndex + 1}/{images.length}
+                        </div>
+                        
+                        {/* Mobile Swipe Hint */}
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none sm:hidden">
+                          <div className="bg-black/30 text-white text-sm px-4 py-2 rounded-full opacity-50 animate-pulse">
+                            Geser untuk melihat foto lain
+                          </div>
+                        </div>
+                        
+                        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
+                          {images.map((_, index) => (
+                            <button
+                              key={index}
+                              onClick={() => handleDotClick(index)}
+                              className={`w-3 h-3 rounded-full transition-all duration-200 ${
+                                index === currentImageIndex 
+                                  ? 'bg-white' 
+                                  : 'bg-white/50 hover:bg-white/75'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Post Title and Actions */}
               <div className="flex items-start justify-between mb-4">

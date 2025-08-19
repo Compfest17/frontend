@@ -8,9 +8,11 @@ export default function LayoutWrapper({ children }) {
   const pathname = usePathname();
 
   const authPages = ['/login', '/register', '/forgot-password', '/auth/reset-password'];
+  const forumPages = ['/forum']; // Add forum pages exception
   const isAuthPage = authPages.includes(pathname);
+  const isForumPage = pathname.startsWith('/forum'); // Check if it's any forum route
 
-  if (isAuthPage) {
+  if (isAuthPage || isForumPage) {
     return children; 
   }
   
