@@ -1,35 +1,165 @@
 'use client';
 import { notFound, useRouter } from 'next/navigation';
-import { use, useEffect, useState, useRef } from 'react';
-import { ArrowLeft, Heart, ThumbsDown, Bookmark } from 'lucide-react';
-import forumData from '../../../data/forumData.json';
+import { use, useEffect, useState, useRef, useCallback } from 'react';
+import { ArrowLeft, ThumbsUp, ThumbsDown, Bookmark } from 'lucide-react';
 import StatusBadge from '../../../components/formulir/StatusBadge';
 import MapComponent from '../../../components/formulir/MapComponent';
 import CommentsSection from '../../../components/formulir/CommentsSection';
+import { getCurrentUser } from '@/lib/supabase-auth';
+import ForumAPI from '../../../services/forumAPI';
 
 export default function ForumPostPage({ params }) {
   const router = useRouter();
   const [post, setPost] = useState(null);
+  const [comments, setComments] = useState([]);
+  const [loadingComments, setLoadingComments] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const resolvedParams = use(params);
   
-  // Touch/Swipe states
+  const [liked, setLiked] = useState(false);
+  const [disliked, setDisliked] = useState(false);
+  const [bookmarked, setBookmarked] = useState(false);
+  const [voteBusy, setVoteBusy] = useState(false);
+  const [bookmarkBusy, setBookmarkBusy] = useState(false);
+  
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
   const carouselRef = useRef(null);
   const minSwipeDistance = 50;
 
-  useEffect(() => {
-    const foundPost = forumData.posts.find(p => p.id === parseInt(resolvedParams.id));
-    if (!foundPost) {
-      notFound();
+  const reloadComments = useCallback(async () => {
+    try {
+      setLoadingComments(true);
+      const commentsRes = await ForumAPI.getComments(resolvedParams.id);
+      if (commentsRes.success) setComments(commentsRes.data);
+    } finally {
+      setLoadingComments(false);
     }
-    setPost(foundPost);
   }, [resolvedParams.id]);
 
-  // Get images array
-  const images = post?.images || (post?.image ? [post.image] : []);
+  const handleLike = async () => {
+    if (voteBusy) return;
+    try {
+      setVoteBusy(true);
+      const { user } = await getCurrentUser();
+      if (!user) return;
+      
+      const token = user.access_token;
+      if (disliked) {
+        await ForumAPI.votePost(resolvedParams.id, 'remove_downvote', token);
+      }
+      const action = liked ? 'remove_upvote' : 'upvote';
+      await ForumAPI.votePost(resolvedParams.id, action, token);
+      
+      setLiked(!liked);
+      setDisliked(false);
+      
+      setPost(prev => ({
+        ...prev,
+        upvotes: prev.upvotes + (liked ? -1 : 1),
+        downvotes: disliked ? prev.downvotes - 1 : prev.downvotes
+      }));
+    } catch (error) {
+      console.error('Error voting:', error);
+    } finally {
+      setVoteBusy(false);
+    }
+  };
+
+  const handleDislike = async () => {
+    if (voteBusy) return;
+    try {
+      setVoteBusy(true);
+      const { user } = await getCurrentUser();
+      if (!user) return;
+      
+      const token = user.access_token;
+      if (liked) {
+        await ForumAPI.votePost(resolvedParams.id, 'remove_upvote', token);
+      }
+      const action = disliked ? 'remove_downvote' : 'downvote';
+      await ForumAPI.votePost(resolvedParams.id, action, token);
+      
+      setDisliked(!disliked);
+      setLiked(false);
+      
+      setPost(prev => ({
+        ...prev,
+        downvotes: prev.downvotes + (disliked ? -1 : 1),
+        upvotes: liked ? prev.upvotes - 1 : prev.upvotes
+      }));
+    } catch (error) {
+      console.error('Error voting:', error);
+    } finally {
+      setVoteBusy(false);
+    }
+  };
+
+  const handleBookmark = async () => {
+    if (bookmarkBusy) return;
+    try {
+      setBookmarkBusy(true);
+      const { user } = await getCurrentUser();
+      if (!user) return;
+      
+      const token = user.access_token;
+      await ForumAPI.toggleBookmark(resolvedParams.id, token);
+      setBookmarked(!bookmarked);
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+    } finally {
+      setBookmarkBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    const fetchForumPost = async () => {
+      try {
+        const { user } = await getCurrentUser();
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+        
+        const response = await fetch(`${API_BASE_URL}/api/forums/${resolvedParams.id}`, {
+          headers: user?.access_token ? {
+            'Authorization': `Bearer ${user.access_token}`
+          } : {}
+        });
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            notFound();
+          }
+          throw new Error('Failed to fetch forum post');
+        }
+
+        const result = await response.json();
+        if (result.success) {
+          setPost(result.data);
+          await reloadComments();
+          
+          if (user?.access_token) {
+            try {
+              const bookmarkStatus = await ForumAPI.checkBookmarkStatus(resolvedParams.id, user.access_token);
+              setBookmarked(bookmarkStatus);
+            } catch (error) {
+              console.error('Error checking bookmark status:', error);
+            }
+          }
+        } else {
+          notFound();
+        }
+      } catch (error) {
+        console.error('Error fetching forum post:', error);
+        notFound();
+      }
+    };
+
+    fetchForumPost();
+  }, [resolvedParams.id, reloadComments]);
+
+  const images = post?.forum_media?.map(media => media.file_url) || 
+                 post?.images || 
+                 (post?.image ? [post.image] : []);
 
   const handlePrevImage = () => {
     setCurrentImageIndex((prev) => 
@@ -47,7 +177,6 @@ export default function ForumPostPage({ params }) {
     setCurrentImageIndex(index);
   };
 
-  // Touch handlers for swipe functionality
   const onTouchStart = (e) => {
     setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
@@ -81,34 +210,36 @@ export default function ForumPostPage({ params }) {
     router.back();
   };
 
+  
+
   const toggleExpanded = () => {
     setIsExpanded(!isExpanded);
   };
 
   const truncateText = (text, maxLength = 150) => {
-    if (text.length <= maxLength) return text;
+    if (!text || text.length <= maxLength) return text || '';
     return text.slice(0, maxLength) + '...';
   };
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="container mx-auto px-4 sm:px-6 py-8">
+      <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
         <div className="max-w-6xl mx-auto">
           {/* Back Button */}
           <button 
             onClick={handleBackClick}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-6"
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-4 sm:mb-6 text-sm sm:text-base"
           >
-            <ArrowLeft size={20} />
+            <ArrowLeft size={18} className="sm:w-5 sm:h-5" />
             Kembali ke Forum
           </button>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
             {/* Main Content */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 space-y-6">
               {/* Post Image Carousel - Simple Version */}
               {images && images.length > 0 && (
-                <div className="aspect-video relative mb-6 rounded-lg overflow-hidden group">
+                <div className="aspect-video relative mb-4 lg:mb-6 rounded-lg overflow-hidden group">
                   <div
                     ref={carouselRef}
                     className="relative h-full select-none"
@@ -175,79 +306,127 @@ export default function ForumPostPage({ params }) {
               )}
 
               {/* Post Title and Actions */}
-              <div className="flex items-start justify-between mb-4">
-                <h1 className="text-2xl font-bold text-gray-900 flex-1 mr-4">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 mb-4 lg:mb-6">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex-1">
                   {post.title}
                 </h1>
                 
                 {/* Action Buttons */}
                 <div className="flex items-center gap-4">
-                  <button className="flex items-center gap-2 text-gray-600 hover:text-red-500 transition-colors">
-                    <Heart size={20} />
-                    <span className="text-sm font-medium">{post.likes}</span>
+                  <button 
+                    onClick={handleLike}
+                    disabled={voteBusy}
+                    className={`flex items-center gap-2 transition-colors ${
+                      liked 
+                        ? 'text-green-600 hover:text-green-700' 
+                        : 'text-gray-600 hover:text-green-500'
+                    } ${voteBusy ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    <ThumbsUp size={18} className="sm:w-5 sm:h-5" fill={liked ? "currentColor" : "none"} />
+                    <span className="text-sm font-medium">{post.upvotes || post.likes || 0}</span>
                   </button>
-                  <button className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors">
-                    <ThumbsDown size={20} />
-                    <span className="text-sm font-medium">{post.dislikes}</span>
+                  <button 
+                    onClick={handleDislike}
+                    disabled={voteBusy}
+                    className={`flex items-center gap-2 transition-colors ${
+                      disliked 
+                        ? 'text-red-600 hover:text-red-700' 
+                        : 'text-gray-600 hover:text-red-500'
+                    } ${voteBusy ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    <ThumbsDown size={18} className="sm:w-5 sm:h-5" fill={disliked ? "currentColor" : "none"} />
+                    <span className="text-sm font-medium">{post.downvotes || post.dislikes || 0}</span>
                   </button>
-                  <button className="flex items-center gap-2 text-gray-600 hover:text-blue-500 transition-colors">
-                    <Bookmark size={20} />
+                  <button 
+                    onClick={handleBookmark}
+                    disabled={bookmarkBusy}
+                    className={`flex items-center gap-2 transition-colors ${
+                      bookmarked 
+                        ? 'text-orange-600 hover:text-orange-700' 
+                        : 'text-gray-600 hover:text-orange-500'
+                    } ${bookmarkBusy ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    <Bookmark size={18} className="sm:w-5 sm:h-5" fill={bookmarked ? "currentColor" : "none"} />
                   </button>
                 </div>
               </div>
 
               {/* Status Badge */}
-              <div className="mb-6">
+              <div className="mb-4 lg:mb-6">
                 <StatusBadge status={post.status} />
               </div>
 
               {/* Author Info */}
-              <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center gap-3 mb-4 lg:mb-6">
                 <img 
-                  src="/image/forum/test/profil-test.jpg" 
+                  src={post.is_anonymous ? "/image/forum/test/profil-test.jpg" : (post.users?.avatar_url || "/image/forum/test/profil-test.jpg")} 
                   alt="Profile"
-                  className="w-10 h-10 rounded-full object-cover"
+                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
                 />
                 <div>
-                  <p className="font-medium text-gray-900">{post.author}</p>
-                  <p className="text-sm text-gray-500">{post.authorRole}</p>
+                  <p className="font-medium text-gray-900 text-sm sm:text-base">
+                    {post.is_anonymous ? 'Anonymous' : (post.users?.full_name || post.author || 'Anonymous')}
+                  </p>
+                  {!post.is_anonymous && (
+                    <p className="text-xs sm:text-sm text-gray-500">
+                      @{post.users?.username || post.author?.toLowerCase().replace(/\s+/g, '') || 'anonymous'}
+                    </p>
+                  )}
+                  
                 </div>
               </div>
 
               {/* Description */}
-              <div className="mb-8">
-                <div className="bg-gray-100 rounded-lg p-4">
+              <div className="mb-6 lg:mb-8">
+                <div className="bg-gray-100 rounded-lg p-3 sm:p-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm font-medium text-gray-900">{post.date}</span>
-                    <span className="text-sm text-gray-500">•</span>
-                    <span className="text-sm text-gray-500">{post.location}</span>
+                    <span className="text-xs sm:text-sm font-medium text-gray-900">{post.date}</span>
+                    <span className="text-xs sm:text-sm text-gray-500">•</span>
+                    <span className="text-xs sm:text-sm text-gray-500">{post.address || post.location}</span>
                   </div>
                   
-                  <p className="text-gray-700 leading-relaxed mb-2">
-                    {isExpanded ? post.content : truncateText(post.content)}
+                  <p className="text-gray-700 leading-relaxed mb-2 text-sm sm:text-base">
+                    {isExpanded ? (post.description || post.content) : truncateText(post.description || post.content)}
                   </p>
                   
-                  {post.content && post.content.length > 150 && (
+                  {(post.description || post.content) && (post.description || post.content).length > 150 && (
                     <button 
                       onClick={toggleExpanded}
-                      className="text-sm font-medium text-gray-600 hover:text-gray-800"
+                      className="text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-800"
                     >
-                      {isExpanded ? '...selengkapnya' : 'Lihat selengkapnya'}
+                      {isExpanded ? 'Lihat lebih sedikit' : 'Lihat selengkapnya'}
                     </button>
                   )}
                 </div>
               </div>
 
+              {/* Map - Mobile Layout (below description) */}
+              <div className="lg:hidden mb-6 lg:mb-8">
+                <MapComponent 
+                  location={post.location} 
+                  address={post.address}
+                  latitude={post.latitude}
+                  longitude={post.longitude}
+                />
+              </div>
+
               {/* Comments Section */}
               <CommentsSection 
-                comments={post.commentsList} 
-                commentCount={post.comments}
+                comments={comments} 
+                commentCount={comments.length}
+                forumId={resolvedParams.id}
+                onAfterSubmit={reloadComments}
               />
             </div>
 
-            {/* Sidebar - Map */}
-            <div className="lg:col-span-1">
-              <MapComponent location={post.location} address={post.address} />
+            {/* Sidebar - Map - Desktop Layout */}
+            <div className="hidden lg:block lg:col-span-1">
+              <MapComponent 
+                location={post.location} 
+                address={post.address}
+                latitude={post.latitude}
+                longitude={post.longitude}
+              />
             </div>
           </div>
         </div>

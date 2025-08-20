@@ -1,9 +1,34 @@
+'use client';
+import { useState, useEffect } from 'react';
 import Sidebar from '../../../components/forum/Sidebar';
 import RightSidebar from '../../../components/forum/RightSidebar';
 import MobileSidebarTrigger from '../../../components/forum/MobileSidebarTrigger';
 import NotificationSection from './components/NotificationSection';
+import ForumAPI from '../../../services/forumAPI';
 
 export default function NotificationsPage() {
+  const [trendingDiscussions, setTrendingDiscussions] = useState([]);
+
+  useEffect(() => {
+    loadTrendingDiscussions();
+  }, []);
+
+  const loadTrendingDiscussions = async () => {
+    try {
+      const response = await ForumAPI.getForums();
+      
+      const posts = response.success && Array.isArray(response.data) ? response.data : [];
+      
+      const trending = [...posts]
+        .sort((a, b) => (b.views_count || 0) - (a.views_count || 0))
+        .slice(0, 4);
+      setTrendingDiscussions(trending);
+    } catch (error) {
+      console.error('Error loading trending discussions:', error);
+      setTrendingDiscussions([]);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <div className="flex max-w-7xl mx-auto relative">
@@ -19,7 +44,7 @@ export default function NotificationsPage() {
         
         {/* Right Sidebar - Desktop Only */}
         <div className="hidden xl:block flex-shrink-0">
-          <RightSidebar />
+          <RightSidebar trendingDiscussions={trendingDiscussions} />
         </div>
       </div>
 

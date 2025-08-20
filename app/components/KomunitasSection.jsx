@@ -5,17 +5,19 @@ import ForumCard from "../../components/formulir/ForumCard";
 import forumData from "../../data/forumData.json";
 import AOS from 'aos';
 import 'aos/dist/aos.css';
-AOS.init(); 
 
 export default function KomunitasSection() {
   const [posts, setPosts] = useState(forumData.posts);
   const [filteredPosts, setFilteredPosts] = useState(forumData.posts);
   const [currentPage, setCurrentPage] = useState(1);
 
+  useEffect(() => {
+    AOS.init();
+  }, []);
+
   const postsPerPage = 3;
   const totalPages = Math.ceil(filteredPosts.length / postsPerPage);
 
-  // Get current posts for the page
   const indexOfLastPost = currentPage * postsPerPage;
   const indexOfFirstPost = indexOfLastPost - postsPerPage;
   const currentPosts = filteredPosts.slice(indexOfFirstPost, indexOfLastPost);

@@ -16,7 +16,8 @@ export default function AddressInput({
   onChange,
   onCoordinatesChange,
   placeholder = "Masukkan alamat lengkap lokasi",
-  className = ""
+  className = "",
+  authToken = null
 }) {
   const [inputValue, setInputValue] = useState(value);
   const [suggestions, setSuggestions] = useState([]);
@@ -61,7 +62,7 @@ export default function AddressInput({
   const searchAddresses = async (query) => {
     try {
       setIsLoading(true);
-      const response = await GeocodingAPI.searchAddresses(query, 5);
+      const response = await GeocodingAPI.searchAddresses(query, 5, authToken);
       
       if (response.success) {
         setSuggestions(response.data || []);
@@ -105,7 +106,7 @@ export default function AddressInput({
     try {
       setIsLoading(true); 
       
-      const response = await GeocodingAPI.reverseGeocode(coords.lat, coords.lng);
+      const response = await GeocodingAPI.reverseGeocode(coords.lat, coords.lng, authToken);
       
       if (response.success && response.data?.display_name) {
         setInputValue(response.data.display_name);

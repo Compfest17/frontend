@@ -5,14 +5,18 @@ import { useState, useEffect } from 'react';
 import { Bell, MessageSquare } from 'lucide-react';
 import Statistic from "../../data/statisticData.json";
 import AOS from 'aos';
-import 'aos/dist/aos.css';
-AOS.init(); 
+import 'aos/dist/aos.css'; 
 
 
 export default function HeroSection() {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
+    // Initialize AOS only on client side
+    if (typeof window !== 'undefined') {
+      AOS.init();
+    }
+    
     const timer = setTimeout(() => {
       setIsLoaded(true);
     }, 200);

@@ -16,8 +16,21 @@ export default function FormulirPage() {
     const checkUser = async () => {
       try {
         const { user } = await getCurrentUser();
-        setUser(user);
-        if (!user) {
+        let mergedUser = user;
+        if (user?.access_token) {
+          try {
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            const res = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+              headers: { 'Authorization': `Bearer ${user.access_token}` }
+            });
+            if (res.ok) {
+              const profile = await res.json();
+              mergedUser = { ...user, ...profile.data.user };
+            }
+          } catch (_) {}
+        }
+        setUser(mergedUser);
+        if (!mergedUser) {
           setShowAuthModal(true);
         }
       } catch (error) {
