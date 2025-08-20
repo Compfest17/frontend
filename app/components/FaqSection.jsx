@@ -1,9 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import AOS from "aos";
 import "aos/dist/aos.css";
-AOS.init();
+
 
 const faqData = [
   {
@@ -36,6 +36,11 @@ const faqData = [
 
 export default function FaqSection() {
   const [openIndex, setOpenIndex] = useState(null);
+
+  // Initialize AOS only on client side
+  useEffect(() => {
+    AOS.init();
+  }, []);
 
   const toggleIndex = (index) => {
     setOpenIndex(index === openIndex ? null : index);

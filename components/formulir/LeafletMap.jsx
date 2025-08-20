@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap, Circle, CircleMarker, GeoJSON } from 'react-leaflet';
 
 function MapClickHandler({ onMapClick }) {
   const map = useMapEvents({
@@ -38,7 +38,10 @@ export default function LeafletMap({
   markers = [],
   onMapClick,
   height = '400px',
-  className = ''
+  className = '',
+  coverage = null,
+  boundaryGeoJSON = null,
+  boundaryStyle = { color: '#DD761C', weight: 2, fillColor: '#DD761C', fillOpacity: 0.15 }
 }) {
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -88,15 +91,42 @@ export default function LeafletMap({
         
         {onMapClick && <MapClickHandler onMapClick={onMapClick} />}
         
-        {markers.map((marker, index) => (
-          <Marker key={index} position={[marker.lat, marker.lng]}>
-            {marker.popup && (
-              <Popup>
-                <div dangerouslySetInnerHTML={{ __html: marker.popup }} />
-              </Popup>
-            )}
-          </Marker>
-        ))}
+        {markers.map((marker, index) => {
+          const status = marker.status || null;
+          const color = status === 'resolved' ? '#22c55e' : status === 'in_progress' ? '#f59e0b' : status === 'open' ? '#ef4444' : '#3b82f6';
+          if (status) {
+            return (
+              <CircleMarker key={index} center={[marker.lat, marker.lng]} radius={8} pathOptions={{ color, fillColor: color, fillOpacity: 0.9 }}>
+                {marker.popup && (
+                  <Popup>
+                    <div dangerouslySetInnerHTML={{ __html: marker.popup }} />
+                  </Popup>
+                )}
+              </CircleMarker>
+            );
+          }
+          return (
+            <Marker key={index} position={[marker.lat, marker.lng]}>
+              {marker.popup && (
+                <Popup>
+                  <div dangerouslySetInnerHTML={{ __html: marker.popup }} />
+                </Popup>
+              )}
+            </Marker>
+          );
+        })}
+
+        {coverage && coverage.lat && coverage.lng && (
+          <Circle
+            center={[coverage.lat, coverage.lng]}
+            radius={coverage.radius || 5000}
+            pathOptions={{ color: coverage.color || '#2563eb', fillColor: coverage.fillColor || '#93c5fd', fillOpacity: coverage.fillOpacity ?? 0.2 }}
+          />
+        )}
+
+        {boundaryGeoJSON && (
+          <GeoJSON data={boundaryGeoJSON} style={boundaryStyle} />
+        )}
       </MapContainer>
     </div>
   );

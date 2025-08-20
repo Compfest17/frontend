@@ -1,12 +1,25 @@
 export default function StatusBadge({ status }) {
   const getStatusStyle = (status) => {
     switch (status) {
+      case 'pending':
+      case 'baru':
+      case 'new':
+        return 'bg-blue-100 text-blue-800';
       case 'sedang_proses':
+      case 'in_progress':
+      case 'ongoing':
+      case 'proses':
         return 'bg-yellow-100 text-yellow-800';
       case 'selesai':
+      case 'resolved':
+      case 'completed':
         return 'bg-green-100 text-green-800';
       case 'batal':
+      case 'closed':
+      case 'cancelled':
         return 'bg-red-100 text-red-800';
+      case 'open':
+        return 'bg-blue-100 text-blue-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -14,14 +27,27 @@ export default function StatusBadge({ status }) {
 
   const getStatusText = (status) => {
     switch (status) {
+      case 'pending':
+      case 'baru':
+      case 'new':
+        return 'Baru';
       case 'sedang_proses':
-        return 'Sedang di proses';
+      case 'in_progress':
+      case 'ongoing':
+      case 'proses':
+        return 'Sedang Diproses';
       case 'selesai':
-        return 'Proses selesai';
+      case 'resolved':
+      case 'completed':
+        return 'Selesai';
       case 'batal':
-        return 'Proses batal';
+      case 'closed':
+      case 'cancelled':
+        return 'Dibatalkan';
+      case 'open':
+        return 'Terbuka';
       default:
-        return 'Status tidak diketahui';
+        return 'Status Tidak Diketahui';
     }
   };
 

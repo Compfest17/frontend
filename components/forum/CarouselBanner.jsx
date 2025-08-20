@@ -31,7 +31,6 @@ export default function CarouselBanner() {
     }
   ];
 
-  // Auto-slide functionality
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % banners.length);

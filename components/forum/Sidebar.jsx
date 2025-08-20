@@ -1,13 +1,44 @@
 'use client';
 import { useRouter, usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { getCurrentUser } from '@/lib/supabase-auth';
 
 export default function Sidebar({ onNavigate }) {
   const router = useRouter();
   const pathname = usePathname();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    fetchUnreadCount();
+  }, []);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const { user } = await getCurrentUser();
+      if (!user) return;
+
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${API_BASE_URL}/api/notifications/unread-count`, {
+        headers: {
+          'Authorization': `Bearer ${user.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setUnreadCount(result.data.unread_count || 0);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
+  };
 
   const menuItems = [
     { icon: 'home', label: 'Beranda', path: '/forum' },
-    { icon: 'bell', label: 'Notifikasi', path: '/forum/notifications', badge: 3 },
+    { icon: 'bell', label: 'Notifikasi', path: '/forum/notifications', badge: unreadCount },
     { icon: 'bookmark', label: 'Tersimpan', path: '/forum/bookmarks' }
   ];
 
@@ -69,10 +100,10 @@ export default function Sidebar({ onNavigate }) {
             >
               <div className="flex-shrink-0 relative">
                 {getIcon(item.icon, active)}
-                {/* Badge for notifications */}
-                {item.badge && (
+                {/* Badge for notifications - only show if count > 0 */}
+                {item.badge && item.badge > 0 && (
                   <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
-                    {item.badge}
+                    {item.badge > 99 ? '99+' : item.badge}
                   </span>
                 )}
               </div>

@@ -41,6 +41,11 @@ export default function Formulir({ user, onAuthRequired }) {
       return;
     }
 
+    if (user?.role === 'admin' || user?.role === 'karyawan') {
+      alert('Akun admin/karyawan tidak bisa mengirim formulir.');
+      return;
+    }
+
     const uploadStats = getUploadStats();
     
     const hasValidAddress = formData.address && (
@@ -61,7 +66,9 @@ export default function Formulir({ user, onAuthRequired }) {
       
       if (uploadStats.total > 0) {
         try {
+          console.log('📤 Starting image upload...');
           const uploadedFiles = await uploadAllPending();
+          console.log('📷 Uploaded files:', uploadedFiles);
           media_urls = uploadedFiles.map(file => ({
             url: file.url,
             type: file.type,
@@ -69,10 +76,14 @@ export default function Formulir({ user, onAuthRequired }) {
             size: file.size,
             public_id: file.public_id
           }));
+          console.log('📷 Media URLs to send:', media_urls);
         } catch (uploadError) {
+          console.error('❌ Upload error:', uploadError);
           alert('Gagal mengupload foto. Silakan coba lagi.');
           return;
         }
+      } else {
+        console.log('📷 No images to upload');
       }
 
       const submitData = {
@@ -180,6 +191,7 @@ export default function Formulir({ user, onAuthRequired }) {
             onChange={(address) => handleInputChange('address', address)}
             onCoordinatesChange={(coordinates) => handleInputChange('coordinates', coordinates)}
             placeholder="Alamat lengkap lokasi jalan rusak"
+            authToken={user?.access_token}
           />
         </div>
 

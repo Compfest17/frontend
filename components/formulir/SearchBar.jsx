@@ -14,7 +14,7 @@ export default function SearchBar({ onSearch }) {
       <div className="relative max-w-2xl mx-auto">
         <input
           type="text"
-          placeholder="Cari diskusi..."
+          placeholder="Cari diskusi, lokasi, atau #hashtag..."
           value={searchTerm}
           onChange={handleSearch}
           className="w-full px-4 py-3 pl-12 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"

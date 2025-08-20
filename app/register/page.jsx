@@ -14,7 +14,8 @@ export default function RegisterPage() {
     full_name: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    referralCode: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -56,11 +57,11 @@ export default function RegisterPage() {
       const { data, error } = await signUp(
         formData.email, 
         formData.password, 
-        formData.full_name
+        formData.full_name,
+        formData.referralCode
       );
 
       if (error) {
-        // Handle specific error cases
         if (error.message.includes('User already registered') || 
             error.message.includes('already registered') ||
             error.message.includes('already been registered')) {
@@ -90,7 +91,6 @@ export default function RegisterPage() {
     } catch (error) {
       console.error('Register failed:', error);
       
-      // Handle different error types
       if (error.message.includes('User already registered') || 
           error.message.includes('already registered') ||
           error.message.includes('already been registered')) {
@@ -220,6 +220,27 @@ export default function RegisterPage() {
                 onFocus={(e) => e.target.style.borderBottomColor = '#DD761C'}
                 onBlur={(e) => e.target.style.borderBottomColor = formData.full_name ? '#DD761C' : '#d1d5db'}
                 required
+                disabled={isLoading}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="referralCode" className="block text-sm font-medium text-gray-700 mb-2">
+                KODE REFERAL (Optional)
+              </label>
+              <input
+                type="text"
+                id="referralCode"
+                name="referralCode"
+                value={formData.referralCode}
+                onChange={handleInputChange}
+                placeholder="Masukkan kode referal untuk menjadi karyawan"
+                className="w-full px-0 py-3 border-0 border-b-2 border-gray-300 focus:outline-none bg-transparent text-gray-900 placeholder-gray-500 transition-colors duration-200"
+                style={{ 
+                  borderBottomColor: formData.referralCode ? '#DD761C' : undefined,
+                }}
+                onFocus={(e) => e.target.style.borderBottomColor = '#DD761C'}
+                onBlur={(e) => e.target.style.borderBottomColor = formData.referralCode ? '#DD761C' : '#d1d5db'}
                 disabled={isLoading}
               />
             </div>

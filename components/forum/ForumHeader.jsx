@@ -2,8 +2,7 @@
 import { useState, useEffect } from 'react';
 import forumData from '../../data/forumData.json';
 
-export default function ForumHeader({ onSearch, onTabChange, onStatusFilter }) {
-  const [activeTab, setActiveTab] = useState('Untuk Anda');
+export default function ForumHeader({ onSearch, onTabChange, onStatusFilter, activeTab }) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
@@ -12,7 +11,6 @@ export default function ForumHeader({ onSearch, onTabChange, onStatusFilter }) {
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   
-  // Check if mobile/tablet on mount and resize
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 1280);
@@ -24,12 +22,9 @@ export default function ForumHeader({ onSearch, onTabChange, onStatusFilter }) {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Dynamic tabs based on screen size
-  const tabs = isMobile 
-    ? ['Untuk Anda', 'Status', 'Trending']
-    : ['Untuk Anda', 'Status'];
+  const tabs = ['Untuk Anda', ...(isMobile ? ['Trending'] : []), 'Status'];
 
-  const statusOptions = ['Semua Status', 'Sedang di proses', 'Selesai', 'Batal'];
+  const statusOptions = ['Semua Status', 'Terbuka', 'Sedang di proses', 'Selesai', 'Batal'];
 
   const handleSearch = (e) => {
     const value = e.target.value;
@@ -40,14 +35,12 @@ export default function ForumHeader({ onSearch, onTabChange, onStatusFilter }) {
   };
 
   const handleTabClick = (tab) => {
-    setActiveTab(tab);
     if (tab === 'Status') {
       setIsStatusDropdownOpen(!isStatusDropdownOpen);
     } else {
       setIsStatusDropdownOpen(false);
     }
     
-    // Notify parent component about tab change
     if (onTabChange) {
       onTabChange(tab);
     }
@@ -57,13 +50,11 @@ export default function ForumHeader({ onSearch, onTabChange, onStatusFilter }) {
     setSelectedStatus(status);
     setIsStatusDropdownOpen(false);
     
-    // Notify parent component about status filter change
     if (onStatusFilter) {
       onStatusFilter(status);
     }
   };
 
-  // Scroll detection
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
@@ -100,13 +91,12 @@ export default function ForumHeader({ onSearch, onTabChange, onStatusFilter }) {
         </button>
       </div>
       
-      {/* Search Bar */}
       {isSearchOpen && (
         <div className="px-4 pb-4">
           <div className="relative">
             <input
               type="text"
-              placeholder="Cari diskusi..."
+              placeholder="Cari diskusi, lokasi, atau #hashtag..."
               value={searchTerm}
               onChange={handleSearch}
               className="w-full px-4 py-2 pl-10 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
@@ -121,7 +111,6 @@ export default function ForumHeader({ onSearch, onTabChange, onStatusFilter }) {
         </div>
       )}
       
-      {/* Scrollable Tabs Container */}
       <div className="border-b border-gray-200 relative">
         <div className="overflow-x-auto scrollbar-hide">
           <div className="flex min-w-max">
@@ -150,7 +139,6 @@ export default function ForumHeader({ onSearch, onTabChange, onStatusFilter }) {
           </div>
         </div>
         
-        {/* Status Dropdown */}
         {isStatusDropdownOpen && (
           <div className="absolute top-full right-4 bg-white border border-gray-200 rounded-lg shadow-2xl mt-2 z-[60] min-w-[200px]">
             {statusOptions.map((status) => (
@@ -168,7 +156,6 @@ export default function ForumHeader({ onSearch, onTabChange, onStatusFilter }) {
         )}
       </div>
 
-      {/* Trending content is now handled in ForumSection */}
     </div>
   );
 }

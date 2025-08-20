@@ -31,8 +31,22 @@ export default function Navbar() {
 
     const checkUser = async () => {
       try {
-        const { user } = await getCurrentUser();
-        setUser(user);
+        const { user: authUser } = await getCurrentUser();
+        if (!authUser) {
+          setUser(null);
+          return;
+        }
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+        const res = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+          headers: { 'Authorization': `Bearer ${authUser.access_token}` }
+        });
+        if (res.ok) {
+          const profile = await res.json();
+          const merged = { ...authUser, ...profile.data.user };
+          setUser(merged);
+        } else {
+          setUser(authUser);
+        }
       } catch (error) {
         console.log('No authenticated user');
         setUser(null);
@@ -68,6 +82,31 @@ export default function Navbar() {
       console.error('Sign out error:', error);
     }
   };
+
+  useEffect(() => {
+    const handler = async (e) => {
+      if (e.detail === 'profileUpdated') {
+        try {
+          await (async () => {
+            const { user: authUser } = await getCurrentUser();
+            if (!authUser) return setUser(null);
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            const res = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+              headers: { 'Authorization': `Bearer ${authUser.access_token}` }
+            });
+            if (res.ok) {
+              const profile = await res.json();
+              setUser({ ...authUser, ...profile.data.user });
+            } else {
+              setUser(authUser);
+            }
+          })();
+        } catch (_) {}
+      }
+    };
+    window.addEventListener('profile:updated', handler);
+    return () => window.removeEventListener('profile:updated', handler);
+  }, []);
 
   const navbarVariants = {
     hidden: {
@@ -223,9 +262,9 @@ export default function Navbar() {
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors duration-300"
               >
-                {user.user_metadata?.avatar_url ? (
+                {user.avatar_url || user.user_metadata?.avatar_url ? (
                   <img 
-                    src={user.user_metadata.avatar_url} 
+                    src={user.avatar_url || user.user_metadata?.avatar_url} 
                     alt="Avatar" 
                     className="w-8 h-8 rounded-full"
                   />
@@ -360,9 +399,9 @@ export default function Navbar() {
                   /* Mobile User Menu */
                   <>
                     <div className="flex items-center gap-3 px-4 py-3 bg-white/20 rounded-lg">
-                      {user.user_metadata?.avatar_url ? (
+                      {user.avatar_url || user.user_metadata?.avatar_url ? (
                         <img 
-                          src={user.user_metadata.avatar_url} 
+                          src={user.avatar_url || user.user_metadata?.avatar_url} 
                           alt="Avatar" 
                           className="w-10 h-10 rounded-full"
                         />

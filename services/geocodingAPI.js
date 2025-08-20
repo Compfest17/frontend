@@ -4,14 +4,21 @@ class GeocodingAPI {
   /**
    * Search addresses using OSM Nominatim
    */
-  static async searchAddresses(query, limit = 5) {
+  static async searchAddresses(query, limit = 5, token = null) {
     try {
       const params = new URLSearchParams({
         q: query,
         limit: limit.toString()
       });
 
-      const response = await fetch(`${API_BASE_URL}/api/geocoding/search?${params}`);
+      const headers = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/geocoding/search?${params}`, {
+        headers
+      });
       const data = await response.json();
 
       if (!response.ok) {
@@ -20,22 +27,35 @@ class GeocodingAPI {
 
       return data;
     } catch (error) {
-      console.error('Error searching addresses:', error);
-      throw error;
+      console.error('Error searching addresses via backend, trying direct:', error);
+      
+      try {
+        return await this.searchAddressesDirect(query, limit);
+      } catch (fallbackError) {
+        console.error('Direct search also failed:', fallbackError);
+        throw new Error('Address search service unavailable');
+      }
     }
   }
 
   /**
    * Reverse geocoding - convert coordinates to address
    */
-  static async reverseGeocode(lat, lon) {
+  static async reverseGeocode(lat, lon, token = null) {
     try {
       const params = new URLSearchParams({
         lat: lat.toString(),
         lon: lon.toString()
       });
 
-      const response = await fetch(`${API_BASE_URL}/api/geocoding/reverse?${params}`);
+      const headers = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/geocoding/reverse?${params}`, {
+        headers
+      });
       const data = await response.json();
 
       if (!response.ok) {
@@ -52,14 +72,21 @@ class GeocodingAPI {
   /**
    * Validate coordinates
    */
-  static async validateCoordinates(lat, lon) {
+  static async validateCoordinates(lat, lon, token = null) {
     try {
       const params = new URLSearchParams({
         lat: lat.toString(),
         lon: lon.toString()
       });
 
-      const response = await fetch(`${API_BASE_URL}/api/geocoding/validate?${params}`);
+      const headers = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/geocoding/validate?${params}`, {
+        headers
+      });
       const data = await response.json();
 
       if (!response.ok) {
