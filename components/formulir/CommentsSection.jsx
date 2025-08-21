@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { getCurrentUser } from '../../lib/supabase-auth';
 
 export default function CommentsSection({ comments, commentCount = 0, forumId, onAfterSubmit }) {
@@ -14,6 +14,11 @@ export default function CommentsSection({ comments, commentCount = 0, forumId, o
   const [voteBusyMap, setVoteBusyMap] = useState({});
   const [sortBy, setSortBy] = useState('newest');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [editCommentId, setEditCommentId] = useState(null);
+  const [editCommentText, setEditCommentText] = useState('');
+  const [showActionDropdown, setShowActionDropdown] = useState({});
+  const sortDropdownRef = useRef(null);
+  const actionDropdownRefs = useRef({});
 
   const handleMainCommentFocus = () => {
     setShowMainCommentBox(true);
@@ -83,22 +88,33 @@ export default function CommentsSection({ comments, commentCount = 0, forumId, o
     }
   };
 
+  // Sort comments and their replies
   const sortComments = (commentsToSort) => {
     if (!commentsToSort) return [];
-    
     const sorted = [...commentsToSort];
     switch (sortBy) {
       case 'newest':
-        return sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        break;
       case 'oldest':
-        return sorted.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        sorted.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        break;
       case 'mostLiked':
-        return sorted.sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0));
+        sorted.sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0));
+        break;
       case 'mostDisliked':
-        return sorted.sort((a, b) => (b.downvotes || 0) - (a.downvotes || 0));
+        sorted.sort((a, b) => (b.downvotes || 0) - (a.downvotes || 0));
+        break;
       default:
-        return sorted;
+        break;
     }
+    // Also sort replies for each comment
+    sorted.forEach(comment => {
+      if (Array.isArray(comment.replies)) {
+        comment.replies = sortComments(comment.replies);
+      }
+    });
+    return sorted;
   };
 
   const handleSortChange = (newSortBy) => {
@@ -116,21 +132,36 @@ export default function CommentsSection({ comments, commentCount = 0, forumId, o
     }
   };
 
-  const handleClickOutside = (e) => {
-    if (!e.target.closest('.sort-dropdown')) {
-      setShowSortDropdown(false);
-    }
-  };
-
+  // Improved click outside for dropdown using ref and pointerdown for mobile support
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (!e.target.closest('.sort-dropdown')) {
+    function handleClickOutside(e) {
+      // Only close if click is outside the dropdown container
+      if (sortDropdownRef.current && !sortDropdownRef.current.contains(e.target)) {
         setShowSortDropdown(false);
       }
+    }
+    if (showSortDropdown) {
+      document.addEventListener('pointerdown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('pointerdown', handleClickOutside);
     };
+  }, [showSortDropdown]);
 
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
+  // Handle click outside for action dropdowns
+  useEffect(() => {
+    function handleClickOutside(e) {
+      Object.keys(actionDropdownRefs.current).forEach((id) => {
+        const ref = actionDropdownRefs.current[id];
+        if (ref && !ref.contains(e.target)) {
+          setShowActionDropdown((prev) => ({ ...prev, [id]: false }));
+        }
+      });
+    }
+    document.addEventListener('pointerdown', handleClickOutside);
+    return () => {
+      document.removeEventListener('pointerdown', handleClickOutside);
+    };
   }, []);
 
   const sortedComments = useMemo(() => {
@@ -213,6 +244,67 @@ export default function CommentsSection({ comments, commentCount = 0, forumId, o
     loadUser();
   }, []);
 
+  // Helper to check if current user is the author
+  const isAuthor = (comment) => {
+    if (!currentUser) return false;
+    return (
+      comment.users?.id === currentUser.id ||
+      comment.users?.id === currentUser.user_metadata?.id
+    );
+  };
+
+  // Handle edit click
+  const handleEditClick = (comment) => {
+    setEditCommentId(comment.id);
+    setEditCommentText(comment.content);
+    setShowActionDropdown({});
+  };
+
+  // Handle delete click
+  const handleDeleteClick = async (comment) => {
+    setShowActionDropdown({});
+    if (!window.confirm('Yakin ingin menghapus komentar ini?')) return;
+    try {
+      const { user } = await getCurrentUser();
+      if (!user) return;
+      const token = user.access_token;
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      await fetch(`${API_BASE_URL}/api/forums/comments/${comment.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (onAfterSubmit) onAfterSubmit();
+    } catch (_) {}
+  };
+
+  // Handle save edit
+  const handleSaveEdit = async (comment) => {
+    if (!editCommentText.trim()) return;
+    try {
+      const { user } = await getCurrentUser();
+      if (!user) return;
+      const token = user.access_token;
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      await fetch(`${API_BASE_URL}/api/forums/comments/${comment.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ content: editCommentText.trim() })
+      });
+      setEditCommentId(null);
+      setEditCommentText('');
+      if (onAfterSubmit) onAfterSubmit();
+    } catch (_) {}
+  };
+
+  // Handle cancel edit
+  const handleCancelEdit = () => {
+    setEditCommentId(null);
+    setEditCommentText('');
+  };
+
   return (
     <div className="bg-white rounded-lg p-6">
       {/* Comments Header */}
@@ -220,52 +312,73 @@ export default function CommentsSection({ comments, commentCount = 0, forumId, o
         <h3 className="text-xl font-semibold text-gray-900">
           {commentCount} Komentar
         </h3>
-        <div className="relative">
+        {/* Wrap both button and dropdown in the same ref container */}
+        <div className="relative inline-block" ref={sortDropdownRef}>
           <button
-            onClick={() => setShowSortDropdown(!showSortDropdown)}
+            type="button"
+            onClick={() => setShowSortDropdown((v) => !v)}
             className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
+            aria-haspopup="listbox"
+            aria-expanded={showSortDropdown}
+            aria-controls="sort-dropdown-list"
+            tabIndex={0}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" />
             </svg>
             <span>{getSortLabel()}</span>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`w-4 h-4 transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </button>
-          
           {showSortDropdown && (
-            <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[200px] sort-dropdown">
+            <div
+              id="sort-dropdown-list"
+              className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[200px] sort-dropdown"
+              role="listbox"
+            >
               <div className="py-1">
                 <button
+                  type="button"
                   onClick={() => handleSortChange('newest')}
                   className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${
                     sortBy === 'newest' ? 'text-blue-600 bg-blue-50' : 'text-gray-700'
                   }`}
+                  role="option"
+                  aria-selected={sortBy === 'newest'}
                 >
                   Terbaru
                 </button>
                 <button
+                  type="button"
                   onClick={() => handleSortChange('oldest')}
                   className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${
                     sortBy === 'oldest' ? 'text-blue-600 bg-blue-50' : 'text-gray-700'
                   }`}
+                  role="option"
+                  aria-selected={sortBy === 'oldest'}
                 >
                   Terlama
                 </button>
                 <button
+                  type="button"
                   onClick={() => handleSortChange('mostLiked')}
                   className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${
                     sortBy === 'mostLiked' ? 'text-blue-600 bg-blue-50' : 'text-gray-700'
                   }`}
+                  role="option"
+                  aria-selected={sortBy === 'mostLiked'}
                 >
                   Paling Disukai
                 </button>
                 <button
+                  type="button"
                   onClick={() => handleSortChange('mostDisliked')}
                   className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${
                     sortBy === 'mostDisliked' ? 'text-blue-600 bg-blue-50' : 'text-gray-700'
                   }`}
+                  role="option"
+                  aria-selected={sortBy === 'mostDisliked'}
                 >
                   Paling Tidak Disukai
                 </button>
@@ -336,10 +449,38 @@ export default function CommentsSection({ comments, commentCount = 0, forumId, o
                   <span className="font-medium text-gray-900 text-sm">{comment.users?.full_name || comment.users?.username || 'Anonymous'}</span>
                   <span className="text-xs text-gray-500">{new Date(comment.created_at).toLocaleDateString('id-ID')}</span>
                 </div>
-                <p className="text-sm text-gray-700 mb-3">
-                  {comment.content}
-                </p>
-                
+                {/* Edit mode for comment */}
+                {editCommentId === comment.id ? (
+                  <div>
+                    <textarea
+                      value={editCommentText}
+                      onChange={(e) => setEditCommentText(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg p-3 text-sm resize-none focus:outline-none focus:border-gray-600"
+                      rows={3}
+                      autoFocus
+                    />
+                    <div className="flex justify-end gap-2 mt-2">
+                      <button
+                        onClick={handleCancelEdit}
+                        className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800"
+                      >
+                        Batal
+                      </button>
+                      <button
+                        disabled={!editCommentText.trim()}
+                        onClick={() => handleSaveEdit(comment)}
+                        className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                      >
+                        Simpan
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-700 mb-3">
+                    {comment.content}
+                  </p>
+                )}
+
                 {/* Comment Actions */}
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
@@ -367,11 +508,42 @@ export default function CommentsSection({ comments, commentCount = 0, forumId, o
                     Balas
                   </button>
 
-                  <button className="p-1 hover:bg-gray-100 rounded ml-auto">
-                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                    </svg>
-                  </button>
+                  {/* Three dots button with dropdown */}
+                  <div className="relative ml-auto" ref={el => actionDropdownRefs.current[comment.id] = el}>
+                    <button
+                      className="p-1 hover:bg-gray-100 rounded"
+                      onClick={() =>
+                        setShowActionDropdown(prev => ({
+                          ...prev,
+                          [comment.id]: !prev[comment.id]
+                        }))
+                      }
+                      aria-haspopup="menu"
+                      aria-expanded={!!showActionDropdown[comment.id]}
+                    >
+                      <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <circle cx="12" cy="6" r="1.5" />
+                        <circle cx="12" cy="12" r="1.5" />
+                        <circle cx="12" cy="18" r="1.5" />
+                      </svg>
+                    </button>
+                    {showActionDropdown[comment.id] && isAuthor(comment) && (
+                      <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[120px]">
+                        <button
+                          className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700"
+                          onClick={() => handleEditClick(comment)}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-red-600"
+                          onClick={() => handleDeleteClick(comment)}
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Show Replies Button */}
@@ -441,9 +613,37 @@ export default function CommentsSection({ comments, commentCount = 0, forumId, o
                         <span className="font-medium text-gray-900 text-sm">{reply.users?.full_name || reply.users?.username || 'Anonymous'}</span>
                         <span className="text-xs text-gray-500">{new Date(reply.created_at).toLocaleDateString('id-ID')}</span>
                       </div>
-                      <p className="text-sm text-gray-700 mb-2">
-                        {reply.content}
-                      </p>
+                      {/* Edit mode for reply */}
+                      {editCommentId === reply.id ? (
+                        <div>
+                          <textarea
+                            value={editCommentText}
+                            onChange={(e) => setEditCommentText(e.target.value)}
+                            className="w-full border border-gray-300 rounded-lg p-3 text-sm resize-none focus:outline-none focus:border-gray-600"
+                            rows={2}
+                            autoFocus
+                          />
+                          <div className="flex justify-end gap-2 mt-2">
+                            <button
+                              onClick={handleCancelEdit}
+                              className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800"
+                            >
+                              Batal
+                            </button>
+                            <button
+                              disabled={!editCommentText.trim()}
+                              onClick={() => handleSaveEdit(reply)}
+                              className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                            >
+                              Simpan
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-700 mb-2">
+                          {reply.content}
+                        </p>
+                      )}
                       
                       {/* Reply Actions */}
                       <div className="flex items-center gap-4">
@@ -463,6 +663,43 @@ export default function CommentsSection({ comments, commentCount = 0, forumId, o
                             </svg>
                           </button>
                           <span className="text-xs text-gray-600">{reply.downvotes || 0}</span>
+                        </div>
+
+                        {/* Three dots button for reply */}
+                        <div className="relative ml-auto" ref={el => actionDropdownRefs.current[reply.id] = el}>
+                          <button
+                            className="p-1 hover:bg-gray-100 rounded"
+                            onClick={() =>
+                              setShowActionDropdown(prev => ({
+                                ...prev,
+                                [reply.id]: !prev[reply.id]
+                              }))
+                            }
+                            aria-haspopup="menu"
+                            aria-expanded={!!showActionDropdown[reply.id]}
+                          >
+                            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <circle cx="12" cy="6" r="1.5" />
+                              <circle cx="12" cy="12" r="1.5" />
+                              <circle cx="12" cy="18" r="1.5" />
+                            </svg>
+                          </button>
+                          {showActionDropdown[reply.id] && isAuthor(reply) && (
+                            <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[120px]">
+                              <button
+                                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700"
+                                onClick={() => handleEditClick(reply)}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-red-600"
+                                onClick={() => handleDeleteClick(reply)}
+                              >
+                                Hapus
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>

@@ -16,8 +16,14 @@ export default function Navbar() {
   const [user, setUser] = useState(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
+  // Ambil role dari user
+  const userRole = user?.user_metadata?.role || user?.role || null;
+
+  // Dashboard hanya untuk karyawan/admin
   const navItems = [
-    { name: 'Dashboard', href: '/dashboard' },
+    ...(userRole === 'karyawan' || userRole === 'admin'
+      ? [{ name: 'Dashboard', href: '/dashboard' }]
+      : []),
     { name: 'Formulir', href: '/formulir' },
     { name: 'Forum', href: '/forum' },
     { name: 'About Us', href: '/about' },
