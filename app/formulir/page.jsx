@@ -14,7 +14,7 @@ export default function FormulirPage() {
         <img 
           src="/image/formulir/BackgroundFormulir.svg"
           alt="Background"
-          className="w-full h-auto scale-110 origin-bottom"
+          className="w-full h-auto"
         />
       </div>
       

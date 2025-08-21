@@ -1,0 +1,207 @@
+{
+  "posts": [
+    {
+      "id": 1,
+      "title": "Jalan berlubang parahh banget",
+      "image": "/image/forum/test/article-test.jpg",
+      "author": "John Doe",
+      "authorRole": "Member Biasa",
+      "date": "11 Agustus 2024",
+      "location": "Jakarta Selatan",
+      "address": "Jl. Veteran No.10-11, Ketawanggede, Kec. Lowokwaru, Kota Malang, Jawa Timur 65145",
+      "content": "agan ini kondisinya bener-bener parah banget! Aspalnya udah pada retak-retak, penuh lubang besar di mana-mana, dan gampang-gampang anjir traksinya bikin makin susah gejawan. Setiap kendaraan yang lewat pasti harus pelan-pelan dan zig-zag biar ngejak nyemplung ke lubang. Kalau disiasarin begini terus, bukan cuma bisa nyempuh aja bahaya banget buat pengendara, apalagi pas hujan deras.",
+      "status": "sedang_proses",
+      "likes": 145,
+      "dislikes": 2,
+      "comments": 800,
+      "commentsList": [
+        {
+          "id": 1,
+          "author": "@ariefmuhammaddd",
+          "date": "1 bulan yang lalu",
+          "text": "Waduh ini kondisinya parah banget, udah berapa lama ya jalannya kayak gini?",
+          "likes": 151,
+          "dislikes": 2,
+          "replies": 10,
+          "isFeatured": true,
+          "repliesList": [
+            {
+              "id": 11,
+              "author": "@johndoe123",
+              "date": "1 bulan yang lalu",
+              "text": "Udah sekitar 6 bulan kayaknya, makin parah aja",
+              "likes": 45,
+              "dislikes": 0
+            },
+            {
+              "id": 12,
+              "author": "@warga_malang",
+              "date": "1 bulan yang lalu",
+              "text": "Betul banget, apalagi kalau hujan jadi genangan semua",
+              "likes": 32,
+              "dislikes": 1
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "author": "@frtii_19",
+          "date": "1 bulan yang lalu",
+          "text": "Setiap lewat sini rasanya kayak ikut off-road gratis wkwk",
+          "likes": 138,
+          "dislikes": 0,
+          "replies": 0,
+          "repliesList": []
+        },
+        {
+          "id": 3,
+          "author": "@zikrisaputra8116",
+          "date": "1 bulan yang lalu",
+          "text": "Udah lapor ke dinas terkait belum? Kalau belum coba contact langsung ke hotline mereka biar cepet ditangani.",
+          "likes": 95,
+          "dislikes": 1,
+          "replies": 5,
+          "repliesList": [
+            {
+              "id": 31,
+              "author": "@concerned_citizen",
+              "date": "3 minggu yang lalu",
+              "text": "Udah lapor berkali-kali tapi gak ada tindak lanjut",
+              "likes": 28,
+              "dislikes": 0
+            },
+            {
+              "id": 32,
+              "author": "@local_resident",
+              "date": "3 minggu yang lalu",
+              "text": "Sama, udah complaint via aplikasi juga",
+              "likes": 15,
+              "dislikes": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Lampu jalan mati sudah 2 minggu di Jalan Raya Kemang",
+      "image": "/image/forum/test/article-test.jpg",
+      "author": "Siti Nurhaliza",
+      "date": "10 Agustus 2024",
+      "location": "Jakarta Selatan",
+      "content": "Lampu jalan di sepanjang Jalan Raya Kemang sudah mati selama 2 minggu. Sangat berbahaya untuk pejalan kaki di malam hari.",
+      "likes": 18,
+      "comments": 5
+    },
+    {
+      "id": 3,
+      "title": "Jalan berlubang parahh banget sampai lebar lubang 20 cm",
+      "image": "/image/forum/test/article-test.jpg",
+      "author": "Prashant Kumar singh",
+      "date": "11 Agustus 2024",
+      "location": "Jakarta Selatan",
+      "content": "Jalan di daerah saya sudah sangat parah kondisinya. Lubang-lubang besar bermunculan dan sangat berbahaya untuk pengendara motor maupun mobil.",
+      "likes": 24,
+      "comments": 8
+    },
+    {
+      "id": 4,
+      "title": "Jalan berlubang parahh banget sampai lebar lubang 20 cm",
+      "image": "/image/forum/test/article-test.jpg",
+      "author": "Prashant Kumar singh",
+      "date": "11 Agustus 2024",
+      "location": "Jakarta Selatan",
+      "content": "Jalan di daerah saya sudah sangat parah kondisinya. Lubang-lubang besar bermunculan dan sangat berbahaya untuk pengendara motor maupun mobil.",
+      "likes": 24,
+      "comments": 8
+    },
+    {
+      "id": 5,
+      "title": "Jalan berlubang parahh banget sampai lebar lubang 20 cm",
+      "image": "/image/forum/test/article-test.jpg",
+      "author": "Prashant Kumar singh",
+      "date": "11 Agustus 2024",
+      "location": "Jakarta Selatan",
+      "content": "Jalan di daerah saya sudah sangat parah kondisinya. Lubang-lubang besar bermunculan dan sangat berbahaya untuk pengendara motor maupun mobil.",
+      "likes": 24,
+      "comments": 8
+    },
+    {
+      "id": 6,
+      "title": "Jalan berlubang parahh banget sampai lebar lubang 20 cm",
+      "image": "/image/forum/test/article-test.jpg",
+      "author": "Prashant Kumar singh",
+      "date": "11 Agustus 2024",
+      "location": "Jakarta Selatan",
+      "content": "Jalan di daerah saya sudah sangat parah kondisinya. Lubang-lubang besar bermunculan dan sangat berbahaya untuk pengendara motor maupun mobil.",
+      "likes": 24,
+      "comments": 8
+    },
+    {
+      "id": 7,
+      "title": "Jalan berlubang parahh banget sampai lebar lubang 20 cm",
+      "image": "/image/forum/test/article-test.jpg",
+      "author": "Prashant Kumar singh",
+      "date": "11 Agustus 2024",
+      "location": "Jakarta Selatan",
+      "content": "Jalan di daerah saya sudah sangat parah kondisinya. Lubang-lubang besar bermunculan dan sangat berbahaya untuk pengendara motor maupun mobil.",
+      "likes": 24,
+      "comments": 8
+    },
+    {
+      "id": 8,
+      "title": "Jalan berlubang parahh banget sampai lebar lubang 20 cm",
+      "image": "/image/forum/test/article-test.jpg",
+      "author": "Prashant Kumar singh",
+      "date": "11 Agustus 2024",
+      "location": "Jakarta Selatan",
+      "content": "Jalan di daerah saya sudah sangat parah kondisinya. Lubang-lubang besar bermunculan dan sangat berbahaya untuk pengendara motor maupun mobil.",
+      "likes": 24,
+      "comments": 8
+    },
+    {
+      "id": 9,
+      "title": "Jalan berlubang parahh banget sampai lebar lubang 20 cm",
+      "image": "/image/forum/test/article-test.jpg",
+      "author": "Prashant Kumar singh",
+      "date": "11 Agustus 2024",
+      "location": "Jakarta Selatan",
+      "content": "Jalan di daerah saya sudah sangat parah kondisinya. Lubang-lubang besar bermunculan dan sangat berbahaya untuk pengendara motor maupun mobil.",
+      "likes": 24,
+      "comments": 8
+    },
+    {
+      "id": 10,
+      "title": "Jalan berlubang parahh banget sampai lebar lubang 20 cm",
+      "image": "/image/forum/test/article-test.jpg",
+      "author": "Prashant Kumar singh",
+      "date": "11 Agustus 2024",
+      "location": "Jakarta Selatan",
+      "content": "Jalan di daerah saya sudah sangat parah kondisinya. Lubang-lubang besar bermunculan dan sangat berbahaya untuk pengendara motor maupun mobil.",
+      "likes": 24,
+      "comments": 8
+    },
+    {
+      "id": 11,
+      "title": "Jalan berlubang parahh banget sampai lebar lubang 20 cm",
+      "image": "/image/forum/test/article-test.jpg",
+      "author": "Prashant Kumar singh",
+      "date": "11 Agustus 2024",
+      "location": "Jakarta Selatan",
+      "content": "Jalan di daerah saya sudah sangat parah kondisinya. Lubang-lubang besar bermunculan dan sangat berbahaya untuk pengendara motor maupun mobil.",
+      "likes": 24,
+      "comments": 8
+    },
+    {
+      "id": 12,
+      "title": "Jalan berlubang parahh banget sampai lebar lubang 20 cm",
+      "image": "/image/forum/test/article-test.jpg",
+      "author": "Prashant Kumar singh",
+      "date": "11 Agustus 2024",
+      "location": "Jakarta Selatan",
+      "content": "Jalan di daerah saya sudah sangat parah kondisinya. Lubang-lubang besar bermunculan dan sangat berbahaya untuk pengendara motor maupun mobil.",
+      "likes": 24,
+      "comments": 8
+    }
+  ]
+}
