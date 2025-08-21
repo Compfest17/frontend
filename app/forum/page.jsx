@@ -2,9 +2,10 @@
 import { useState, useEffect } from 'react';
 import Sidebar from '../../components/forum/Sidebar';
 import RightSidebar from '../../components/forum/RightSidebar';
-import MobileSidebarTrigger from '../../components/forum/MobileSidebarTrigger';
 import ForumSection from './components/ForumSection';
 import ForumAPI from '../../services/forumAPI';
+import BottomBar from '../../components/forum/BottomBar';
+import MobileSidebarTrigger from '../../components/forum/MobileSidebarTrigger';
 
 export default function ForumPage() {
   const [trendingDiscussions, setTrendingDiscussions] = useState([]);
@@ -49,7 +50,10 @@ export default function ForumPage() {
         </div>
       </div>
 
-      {/* Mobile Sidebar Trigger */}
+      {/* Mobile BottomBar */}
+      <BottomBar trendingDiscussions={trendingDiscussions} />
+
+      {/* Floating "Buat Laporan" Button for Mobile */}
       <MobileSidebarTrigger />
     </div>
   );

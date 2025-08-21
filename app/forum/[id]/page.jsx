@@ -7,6 +7,8 @@ import MapComponent from '../../../components/formulir/MapComponent';
 import CommentsSection from '../../../components/formulir/CommentsSection';
 import { getCurrentUser } from '@/lib/supabase-auth';
 import ForumAPI from '../../../services/forumAPI';
+import StyleStatusBadge from '../../../components/forum/StyleStatusBadge';
+import ForumCard from '../../../components/formulir/ForumCard';
 
 export default function ForumPostPage({ params }) {
   const router = useRouter();
@@ -27,6 +29,8 @@ export default function ForumPostPage({ params }) {
   const [touchEnd, setTouchEnd] = useState(null);
   const carouselRef = useRef(null);
   const minSwipeDistance = 50;
+
+  const [recommendations, setRecommendations] = useState([]);
 
   const reloadComments = useCallback(async () => {
     try {
@@ -157,6 +161,53 @@ export default function ForumPostPage({ params }) {
     fetchForumPost();
   }, [resolvedParams.id, reloadComments]);
 
+  useEffect(() => {
+    // Fetch all posts and filter for recommendations
+    async function fetchRecommendations() {
+      if (!post) return;
+      try {
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+        const res = await fetch(`${API_BASE_URL}/api/forums`);
+        const data = await res.json();
+        if (!data.success || !Array.isArray(data.data)) return;
+
+        // Get keywords from current post (title, description, tags)
+        const keywords = [];
+        if (post.title) keywords.push(...post.title.toLowerCase().split(/\s+/));
+        if (post.description) keywords.push(...post.description.toLowerCase().split(/\s+/));
+        if (Array.isArray(post.forum_tags)) {
+          keywords.push(...post.forum_tags.map(tag => (tag.tags?.name || tag.name || tag).toLowerCase()));
+        }
+
+        // Remove duplicates and short/common words
+        const uniqueKeywords = Array.from(new Set(keywords)).filter(k => k.length > 3);
+
+        // Filter posts by relevance
+        const filtered = data.data
+          .filter(p => p.id !== post.id)
+          .map(p => {
+            // Combine searchable text
+            const text = [
+              p.title,
+              p.description,
+              ...(Array.isArray(p.forum_tags) ? p.forum_tags.map(tag => tag.tags?.name || tag.name || tag) : [])
+            ].join(' ').toLowerCase();
+            // Count keyword matches
+            const matchCount = uniqueKeywords.reduce((acc, kw) => text.includes(kw) ? acc + 1 : acc, 0);
+            return { ...p, matchCount };
+          })
+          .filter(p => p.matchCount > 0)
+          .sort((a, b) => b.matchCount - a.matchCount)
+          .slice(0, 3);
+
+        setRecommendations(filtered);
+      } catch (err) {
+        setRecommendations([]);
+      }
+    }
+    fetchRecommendations();
+  }, [post]);
+
   const images = post?.forum_media?.map(media => media.file_url) || 
                  post?.images || 
                  (post?.image ? [post.image] : []);
@@ -203,7 +254,14 @@ export default function ForumPostPage({ params }) {
   };
 
   if (!post) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex items-center justify-center py-16 min-h-[60vh]">
+        <div className="flex items-center space-x-2">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500"></div>
+          <span className="text-gray-600">Memuat detail postingan...</span>
+        </div>
+      </div>
+    );
   }
 
   const handleBackClick = () => {
@@ -220,6 +278,13 @@ export default function ForumPostPage({ params }) {
     if (!text || text.length <= maxLength) return text || '';
     return text.slice(0, maxLength) + '...';
   };
+
+  // Build statusHistory from real post data
+  const statusHistory = [
+    { status: 'new', label: 'Laporan Dibuat', date: post?.created_at?.slice(0,10) },
+    { status: 'in_progress', label: 'Sedang Diproses', date: post?.process_date },
+    { status: 'resolved', label: 'Selesai', date: post?.resolved_date },
+  ].filter(step => step.date);
 
   return (
     <div className="min-h-screen bg-white">
@@ -307,12 +372,27 @@ export default function ForumPostPage({ params }) {
 
               {/* Post Title and Actions */}
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 mb-4 lg:mb-6">
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex-1">
-                  {post.title}
-                </h1>
-                
+                <div className="flex-1">
+                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+                    {post.title}
+                  </h1>
+                  {/* Tanggal posting di bawah judul */}
+                  <div className="mt-1 text-xs sm:text-sm text-gray-500">
+                    Diposting pada {post.created_at ? new Date(post.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}
+                  </div>
+                </div>
                 {/* Action Buttons */}
                 <div className="flex items-center gap-4">
+                  {/* View count indicator - match ForumCard.jsx logic */}
+                  <div className="flex items-center gap-1 text-gray-600 text-sm mr-2">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    <span>
+                      {post.views_count ?? post.views ?? 0}
+                    </span>
+                  </div>
                   <button 
                     onClick={handleLike}
                     disabled={voteBusy}
@@ -403,11 +483,15 @@ export default function ForumPostPage({ params }) {
               {/* Map - Mobile Layout (below description) */}
               <div className="lg:hidden mb-6 lg:mb-8">
                 <MapComponent 
-                  location={post.location} 
-                  address={post.address}
-                  latitude={post.latitude}
-                  longitude={post.longitude}
+                  location={post?.location} 
+                  address={post?.address}
+                  latitude={post?.latitude}
+                  longitude={post?.longitude}
                 />
+                {/* Status History Stepper */}
+                <div className="mt-6">
+                  <StyleStatusBadge history={statusHistory} />
+                </div>
               </div>
 
               {/* Comments Section */}
@@ -417,16 +501,33 @@ export default function ForumPostPage({ params }) {
                 forumId={resolvedParams.id}
                 onAfterSubmit={reloadComments}
               />
+              {/* Rekomendasi Section */}
+              <div className="mt-10">
+                <h2 className="text-lg font-bold mb-4 text-gray-900">Rekomendasi untuk anda</h2>
+                <div className="grid grid-cols-1 gap-8 w-full">
+                  {recommendations.length === 0 ? (
+                    <div className="text-gray-500 col-span-3 text-center">Tidak ada rekomendasi relevan ditemukan.</div>
+                  ) : (
+                    recommendations.map((rec, idx) => (
+                      <ForumCard key={rec.id} post={rec} rank={undefined} />
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Sidebar - Map - Desktop Layout */}
             <div className="hidden lg:block lg:col-span-1">
               <MapComponent 
-                location={post.location} 
-                address={post.address}
-                latitude={post.latitude}
-                longitude={post.longitude}
+                location={post?.location} 
+                address={post?.address}
+                latitude={post?.latitude}
+                longitude={post?.longitude}
               />
+              {/* Status History Stepper */}
+              <div className="mt-6">
+                <StyleStatusBadge history={statusHistory} />
+              </div>
             </div>
           </div>
         </div>

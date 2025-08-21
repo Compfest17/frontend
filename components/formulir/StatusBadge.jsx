@@ -1,4 +1,4 @@
-export default function StatusBadge({ status }) {
+export default function StatusBadge({ status, text }) {
   const getStatusStyle = (status) => {
     switch (status) {
       case 'pending':
@@ -20,12 +20,15 @@ export default function StatusBadge({ status }) {
         return 'bg-red-100 text-red-800';
       case 'open':
         return 'bg-blue-100 text-blue-800';
+      case 'disabled':
+        return 'bg-gray-100 text-gray-400';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getStatusText = (status) => {
+    if (text) return text;
     switch (status) {
       case 'pending':
       case 'baru':
@@ -46,6 +49,8 @@ export default function StatusBadge({ status }) {
         return 'Dibatalkan';
       case 'open':
         return 'Terbuka';
+      case 'disabled':
+        return 'Tahap Belum Dimulai';
       default:
         return 'Status Tidak Diketahui';
     }

@@ -5,6 +5,7 @@ import RightSidebar from '../../../components/forum/RightSidebar';
 import MobileSidebarTrigger from '../../../components/forum/MobileSidebarTrigger';
 import BookmarksSection from './components/BookmarksSection';
 import ForumAPI from '../../../services/forumAPI';
+import BottomBar from '../../../components/forum/BottomBar';
 
 export default function BookmarksPage() {
   const [trendingDiscussions, setTrendingDiscussions] = useState([]);
@@ -47,6 +48,9 @@ export default function BookmarksPage() {
           <RightSidebar trendingDiscussions={trendingDiscussions} />
         </div>
       </div>
+
+      {/* Mobile BottomBar */}
+      <BottomBar />
 
       {/* Mobile Sidebar Trigger */}
       <MobileSidebarTrigger />
