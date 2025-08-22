@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { Camera, Upload, X, Loader2 } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 export default function ImageUpload({ 
   currentImage, 
@@ -22,12 +23,12 @@ export default function ImageUpload({
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+      toast.error('Harap pilih file gambar');
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      alert('File size must be less than 5MB');
+      toast.error('Ukuran file harus kurang dari 5MB');
       return;
     }
 

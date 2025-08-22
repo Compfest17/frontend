@@ -1,7 +1,7 @@
 'use client';
 import { notFound, useRouter } from 'next/navigation';
 import { use, useEffect, useState, useRef, useCallback } from 'react';
-import { ArrowLeft, ThumbsUp, ThumbsDown, Bookmark } from 'lucide-react';
+import { ArrowLeft, ThumbsUp, ThumbsDown, Bookmark, MapPin } from 'lucide-react';
 import StatusBadge from '../../../components/formulir/StatusBadge';
 import MapComponent from '../../../components/formulir/MapComponent';
 import CommentsSection from '../../../components/formulir/CommentsSection';
@@ -9,6 +9,7 @@ import { getCurrentUser } from '@/lib/supabase-auth';
 import ForumAPI from '../../../services/forumAPI';
 import StyleStatusBadge from '../../../components/forum/StyleStatusBadge';
 import ForumCard from '../../../components/formulir/ForumCard';
+import UserLevelBadge from '../../../components/forum/UserLevelBadge';
 
 export default function ForumPostPage({ params }) {
   const router = useRouter();
@@ -281,14 +282,18 @@ export default function ForumPostPage({ params }) {
     closed_at: post?.closed_at
   });
 
+  const inProgressDate = post?.in_progress_at || (post?.status === 'in_progress' ? post?.updated_at : undefined);
+  const resolvedDate = post?.resolved_at || (post?.status === 'resolved' ? post?.updated_at : undefined);
+  const closedDate = post?.closed_at || (post?.status === 'closed' ? post?.updated_at : undefined);
+
   const statusHistory = [
-    { status: 'new', label: 'Laporan Dibuat', date: post?.created_at?.slice(0,10) },
-    { status: 'in_progress', label: 'Sedang Diproses', date: post?.in_progress_at ? post.in_progress_at.slice(0,10) : undefined },
-    ...(post?.status === 'resolved' && post?.resolved_at ? [
-      { status: 'resolved', label: 'Selesai', date: post.resolved_at.slice(0,10) }
+    { status: 'new', label: 'Laporan Dibuat', date: post?.created_at ? post.created_at.slice(0,10) : undefined },
+    { status: 'in_progress', label: 'Sedang Diproses', date: inProgressDate ? inProgressDate.slice(0,10) : undefined },
+    ...(resolvedDate ? [
+      { status: 'resolved', label: 'Selesai', date: resolvedDate.slice(0,10) }
     ] : []),
-    ...(post?.status === 'closed' && post?.closed_at ? [
-      { status: 'closed', label: 'Dibatalkan', date: post.closed_at.slice(0,10) }
+    ...(closedDate ? [
+      { status: 'closed', label: 'Dibatalkan', date: closedDate.slice(0,10) }
     ] : []),
   ].filter(step => step.date);
 
@@ -455,6 +460,11 @@ export default function ForumPostPage({ params }) {
                   <p className="font-medium text-gray-900 text-sm sm:text-base">
                     {post.is_anonymous ? 'Anonymous' : (post.users?.full_name || post.author || 'Anonymous')}
                   </p>
+                  {!post.is_anonymous && post.users?.levels?.name && (
+                    <div className="mt-0.5">
+                      <UserLevelBadge levelName={post.users.levels.name} />
+                    </div>
+                  )}
                   {!post.is_anonymous && (
                     <p className="text-xs sm:text-sm text-gray-500">
                       @{post.users?.username || post.author?.toLowerCase().replace(/\s+/g, '') || 'anonymous'}
@@ -469,7 +479,7 @@ export default function ForumPostPage({ params }) {
                 <div className="bg-gray-100 rounded-lg p-3 sm:p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-xs sm:text-sm font-medium text-gray-900">{post.date}</span>
-                    <span className="text-xs sm:text-sm text-gray-500">•</span>
+                                        <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
                     <span className="text-xs sm:text-sm text-gray-500">{post.address || post.location}</span>
                   </div>
                   

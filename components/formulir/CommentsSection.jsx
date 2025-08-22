@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { getCurrentUser } from '../../lib/supabase-auth';
 import MentionAutocomplete from '../forum/MentionAutocomplete';
 import RoleBadge from '../forum/RoleBadge';
+import UserLevelBadge from '../forum/UserLevelBadge';
 
 export default function CommentsSection({ comments, commentCount = 0, forumId, onAfterSubmit }) {
   const [showMainCommentBox, setShowMainCommentBox] = useState(false);
@@ -438,6 +439,7 @@ export default function CommentsSection({ comments, commentCount = 0, forumId, o
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-medium text-gray-900 text-sm">{comment.users?.full_name || comment.users?.username || 'Anonymous'}</span>
+                  {comment.users?.levels?.name && <UserLevelBadge levelName={comment.users.levels.name} />}
                   <RoleBadge role={comment.users?.roles?.name} />
                   <span className="text-xs text-gray-500">{new Date(comment.created_at).toLocaleDateString('id-ID')}</span>
                 </div>
@@ -602,6 +604,7 @@ export default function CommentsSection({ comments, commentCount = 0, forumId, o
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-medium text-gray-900 text-sm">{reply.users?.full_name || reply.users?.username || 'Anonymous'}</span>
+                        {reply.users?.levels?.name && <UserLevelBadge levelName={reply.users.levels.name} />}
                         <RoleBadge role={reply.users?.roles?.name} />
                         <span className="text-xs text-gray-500">{new Date(reply.created_at).toLocaleDateString('id-ID')}</span>
                       </div>

@@ -23,7 +23,6 @@ export default function Navbar() {
     ...(userRole === 'karyawan' || userRole === 'admin'
       ? [{ name: 'Dashboard', href: '/dashboard' }]
       : []),
-    { name: 'Formulir', href: '/formulir' },
     { name: 'Forum', href: '/forum' },
     { name: 'About Us', href: '/about' },
   ];

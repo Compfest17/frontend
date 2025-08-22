@@ -1,9 +1,7 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import AOS from "aos";
-import "aos/dist/aos.css";
-
+import { motion, useInView } from "framer-motion";
 
 const faqData = [
   {
@@ -37,21 +35,46 @@ const faqData = [
 export default function FaqSection() {
   const [openIndex, setOpenIndex] = useState(null);
 
-  useEffect(() => {
-    AOS.init();
-  }, []);
-
   const toggleIndex = (index) => {
     setOpenIndex(index === openIndex ? null : index);
   };
 
+  const sectionRef = useRef(null);
+  const inView = useInView(sectionRef, { once: true, margin: "-100px 0px" });
+
+  const sectionVariants = {
+    hidden: { opacity: 0, y: 40 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.7,
+        ease: [0.25, 0.1, 0.25, 1],
+      },
+    },
+  };
+  const cardVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: (i) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: 0.3 + i * 0.12,
+        duration: 0.5,
+        ease: [0.25, 0.1, 0.25, 1],
+      },
+    }),
+  };
+
   return (
-    <section className="pt-12 pb-20 md:pt-16 md:pb-24 bg-white text-center">
-      <div
-        className="container mx-auto px-4 md:px-8"
-        data-aos="fade-up"
-        data-aos-duration="1000"
-      >
+    <motion.section
+      ref={sectionRef}
+      initial="hidden"
+      animate={inView ? "visible" : "hidden"}
+      variants={sectionVariants}
+      className="pt-12 pb-20 md:pt-16 md:pb-24 bg-white text-center"
+    >
+      <div className="container mx-auto px-4 md:px-8">
         <div className="max-w-5xl mx-auto mb-12 md:mb-16">
           <h2
             className="text-3xl md:text-4xl font-semibold leading-tight font-montserrat mb-6"
@@ -65,14 +88,14 @@ export default function FaqSection() {
           </p>
         </div>
 
-        <div
-          className="mt-10 space-y-4 max-w-4xl mx-auto"
-          data-aos="fade-up"
-          data-aos-duration="1000"
-        >
+        <div className="mt-10 space-y-4 max-w-4xl mx-auto">
           {faqData.map((item, index) => (
-            <div
+            <motion.div
               key={index}
+              variants={cardVariants}
+              initial="hidden"
+              animate={inView ? "visible" : "hidden"}
+              custom={index}
               className={`border rounded-xl transition shadow-sm ${
                 openIndex === index ? "bg-gray-50" : "bg-white"
               }`}
@@ -106,10 +129,10 @@ export default function FaqSection() {
                   {item.answer}
                 </div>
               )}
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>
-    </section>
+    </motion.section>
   );
 }

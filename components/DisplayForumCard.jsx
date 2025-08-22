@@ -1,14 +1,12 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
-import StatusBadge from './StatusBadge';
-import ForumAPI from '../../services/forumAPI';
-import { getCurrentUser } from '../../lib/supabase-auth';
-import MentionAutocomplete from '../forum/MentionAutocomplete';
-import RoleBadge from '../forum/RoleBadge';
-import UserLevelBadge from '../forum/UserLevelBadge';
+import StatusBadge from './formulir/StatusBadge';
+import UserLevelBadge from './forum/UserLevelBadge';
+import ForumAPI from '../services/forumAPI';
+import { getCurrentUser } from '../lib/supabase-auth';
 
-export default function ForumCard({ post, rank }) {
+export default function DisplayForumCard({ post, rank }) {
   const router = useRouter();
   const [liked, setLiked] = useState(false);
   const [disliked, setDisliked] = useState(false);
@@ -398,11 +396,8 @@ export default function ForumCard({ post, rank }) {
   };
 
   return (
-    <>
-      <article 
-        onClick={handleCardClick}
-        className="border-b border-gray-200 p-3 sm:p-4 hover:bg-gray-50 transition-colors cursor-pointer relative"
-      >
+    <div className="border border-gray-200 rounded-2xl shadow-md bg-white mb-4 transition hover:shadow-lg">
+      <div className="p-4 sm:p-5 cursor-pointer text-left" onClick={handleCardClick}>
         {typeof rank === 'number' && (
           <div className="absolute top-2 right-2 flex items-center gap-1 text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded-full">
             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -411,44 +406,46 @@ export default function ForumCard({ post, rank }) {
             <span className="font-semibold">#{rank}</span>
           </div>
         )}
-        <div className="flex gap-2 sm:gap-3">
-          <img 
-            src={post.is_anonymous ? "/image/forum/test/profil-test.jpg" : (post.users?.avatar_url || "/image/forum/test/profil-test.jpg")} 
-            alt={post.is_anonymous ? 'Anonymous User' : (post.users?.full_name || post.author || 'User')}
-            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex-shrink-0 object-cover"
-          />
-          
-          {/* Content */}
-          <div className="flex-1 min-w-0">
+        <div className="flex flex-col gap-2 sm:gap-3">
+          {/* Avatar + Header */}
+          <div className="flex items-center gap-3">
+            <img 
+              src={post.is_anonymous ? "/image/forum/test/profil-test.jpg" : (post.users?.avatar_url || "/image/forum/test/profil-test.jpg")} 
+              alt={post.is_anonymous ? 'Anonymous User' : (post.users?.full_name || post.author || 'User')}
+              className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex-shrink-0 object-cover"
+            />
             {/* Header */}
-            <div className="flex items-center gap-1 sm:gap-2 mb-2">
-              <span className="font-semibold text-gray-900 hover:underline cursor-pointer text-sm sm:text-base">
-                {post.is_anonymous ? 'Anonymous' : (post.users?.full_name || post.author || 'Anonymous')}
-              </span>
-              {!post.is_anonymous && post.users?.levels?.name && (
-                <UserLevelBadge levelName={post.users.levels.name} />
-              )}
-              {!post.is_anonymous && (post.users?.username || post.author) && (
-                <span className="text-gray-500 text-xs sm:text-sm">
-                  @{post.users?.username || post.author?.toLowerCase().replace(/\s+/g, '') || 'anonymous'}
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1 sm:gap-2">
+                <span className="font-semibold text-gray-900 hover:underline cursor-pointer text-sm sm:text-base">
+                  {post.is_anonymous ? 'Anonymous' : (post.users?.full_name || post.author || 'Anonymous')}
                 </span>
-              )}
-              <span className="text-gray-500 text-xs sm:text-sm">·</span>
-              <span className="text-gray-500 text-xs sm:text-sm">{post.date || new Date(post.created_at).toLocaleDateString('id-ID')}</span>
+                {!post.is_anonymous && post.users?.levels?.name && (
+                  <UserLevelBadge levelName={post.users.levels.name} />
+                )}
+                {!post.is_anonymous && (post.users?.username || post.author) && (
+                  <span className="text-gray-500 text-xs sm:text-sm">
+                    @{post.users?.username || post.author?.toLowerCase().replace(/\s+/g, '') || 'anonymous'}
+                  </span>
+                )}
+                <span className="text-gray-500 text-xs sm:text-sm">·</span>
+                <span className="text-gray-500 text-xs sm:text-sm">{post.date || new Date(post.created_at).toLocaleDateString('id-ID')}</span>
+              </div>
+              {/* Status Badge */}
+              <div className="mt-1">
+                <StatusBadge status={post.status} />
+              </div>
             </div>
-            
-            {/* Status Badge */}
-            <div className="mb-2">
-              <StatusBadge status={post.status} />
-            </div>
-            
+          </div>
+          {/* Content */}
+          <div className="flex-1 min-w-0 text-left">
             {/* Post Content */}
             <div className="mb-3">
-              <h3 className="text-gray-900 mb-2 leading-normal text-sm sm:text-base">
+              <h3 className="text-gray-900 mb-2 leading-normal text-sm sm:text-base text-left">
                 {post.title}
               </h3>
               {(post.description || post.content) && (
-                <p className="text-gray-700 leading-normal line-clamp-3 text-sm">
+                <p className="text-gray-700 leading-normal line-clamp-3 text-sm text-left">
                   {post.description || post.content}
                 </p>
               )}
@@ -456,7 +453,7 @@ export default function ForumCard({ post, rank }) {
 
             {/* Tags */}
             {post.forum_tags && post.forum_tags.length > 0 && (
-              <div className="flex flex-wrap gap-1 mb-3">
+              <div className="flex flex-wrap gap-1 mb-3 text-left">
                 {post.forum_tags.map((tagItem, index) => (
                   <span 
                     key={index}
@@ -627,12 +624,12 @@ export default function ForumCard({ post, rank }) {
             {/* Rotating Comments Display - Removed as we now have real comments modal */}
           </div>
         </div>
-      </article>
+      </div>
 
       {/* Comments Popup */}
       {showComments && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col text-left">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <h3 className="font-semibold text-lg">Komentar</h3>
@@ -647,7 +644,7 @@ export default function ForumCard({ post, rank }) {
             </div>
 
             {/* Comments List */}
-            <div className="p-4 overflow-y-auto max-h-[60vh] flex-1">
+            <div className="p-4 overflow-y-auto max-h-[60vh] flex-1 text-left">
               {loadingComments ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
@@ -668,7 +665,6 @@ export default function ForumCard({ post, rank }) {
                             <span className="font-semibold text-sm">
                               {comment.users?.full_name || 'Anonymous'}
                             </span>
-                            <RoleBadge role={comment.users?.roles?.name} />
                             <span className="text-gray-500 text-xs">
                               {new Date(comment.created_at).toLocaleDateString('id-ID')}
                             </span>
@@ -683,7 +679,7 @@ export default function ForumCard({ post, rank }) {
                                 disabled={voteBusyMap[comment.id]}
                               >
                                 <svg className="w-4 h-4" fill={likedMap[comment.id] ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
                                 </svg>
                               </button>
                               <span className="text-xs text-gray-600">{comment.upvotes || 0}</span>
@@ -735,7 +731,6 @@ export default function ForumCard({ post, rank }) {
                                   <span className="font-semibold text-sm">
                                     {reply.users?.full_name || 'Anonymous'}
                                   </span>
-                                  <RoleBadge role={reply.users?.roles?.name} />
                                   <span className="text-gray-500 text-xs">
                                     {new Date(reply.created_at).toLocaleDateString('id-ID')}
                                   </span>
@@ -777,7 +772,7 @@ export default function ForumCard({ post, rank }) {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8">
+                <div className="text-left py-8">
                   <p className="text-gray-500">Belum ada komentar</p>
                 </div>
               )}
@@ -796,12 +791,13 @@ export default function ForumCard({ post, rank }) {
                     <div className="mb-2 text-sm text-gray-600">
                       Balas ke <span className="font-semibold">{replyingTo.users?.full_name || 'Anonymous'}</span>
                     </div>
-                    <MentionAutocomplete
-                      forumId={post.id}
+                    <textarea
                       value={replyText}
-                      onChange={setReplyText}
-                      placeholder="Tulis balasan... Gunakan @ untuk mention user..."
-                      className="p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      onChange={(e) => setReplyText(e.target.value)}
+                      placeholder="Tulis balasan..."
+                      className="w-full p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      rows={3}
+                      disabled={submittingReply}
                     />
                     <div className="flex justify-end gap-2 mt-2">
                       <button 
@@ -837,12 +833,13 @@ export default function ForumCard({ post, rank }) {
                     onError={(e) => { e.currentTarget.src = "/image/forum/test/profil-test.jpg"; }}
                   />
                   <div className="flex-1">
-                    <MentionAutocomplete
-                      forumId={post.id}
+                    <textarea
                       value={newComment}
-                      onChange={setNewComment}
-                      placeholder="Tulis komentar... Gunakan @ untuk mention user..."
-                      className="p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder="Tulis komentar..."
+                      className="w-full p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      rows={3}
+                      disabled={submittingComment}
                     />
                     <div className="flex justify-end mt-2">
                       <button 
@@ -863,6 +860,6 @@ export default function ForumCard({ post, rank }) {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

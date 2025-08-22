@@ -4,8 +4,7 @@ import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { Bell, MessageSquare } from 'lucide-react';
 import ForumAPI from "@/services/forumAPI";
-import AOS from 'aos';
-import 'aos/dist/aos.css'; 
+; 
 
 
 export default function HeroSection() {
@@ -13,9 +12,7 @@ export default function HeroSection() {
   const [summary, setSummary] = useState(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      AOS.init();
-    }
+
     
     const timer = setTimeout(() => {
       setIsLoaded(true);
@@ -111,6 +108,20 @@ export default function HeroSection() {
         delay: 1.6,
       },
     },
+  };
+
+  // Statistic card animation variants
+  const statCardVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: (i) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: 2.2 + i * 0.15,
+        duration: 0.7,
+        ease: [0.25, 0.1, 0.25, 1],
+      },
+    }),
   };
 
   return (
@@ -301,8 +312,8 @@ export default function HeroSection() {
           </div>
         </motion.div>
         
-        {/* Statistic (from backend) */}
-        <div className='flex flex-col md:flex-row mx-auto md:justify-center items-center md:gap-10 mt-20 gap-10 '>
+      {/* Statistic (from backend) */}
+      <div className='flex flex-col md:flex-row mx-auto md:justify-center items-center md:gap-10 mt-20 gap-10 '>
           {[{ id: 1, kategori: 'Laporan Baru', jumlah: summary?.recentReportsCount ?? '-' },
             { id: 2, kategori: 'Total Laporan', jumlah: summary?.totalReports ?? '-' },
             { id: 3, kategori: 'Laporan Selesai', jumlah: summary?.resolvedCount ?? '-' }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { MapPin, Search, ChevronLeft, ChevronRight, Eye, ClipboardList } from 'lucide-react';
 import { getCurrentUser } from '@/lib/supabase-auth';
 import LoadingSpinner from '@/components/LoadingSpinner';

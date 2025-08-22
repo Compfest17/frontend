@@ -1,6 +1,7 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import RoleBadge from './RoleBadge';
+import UserLevelBadge from './UserLevelBadge';
 
 export default function NotificationItem({ notification }) {
   const router = useRouter();
@@ -28,6 +29,7 @@ export default function NotificationItem({ notification }) {
             <div className="flex-1">
               <p className="text-sm text-gray-900 flex items-center gap-2 flex-wrap">
                 <span className="font-semibold">{notification.user}</span>
+                {notification.levelName && <UserLevelBadge levelName={notification.levelName} />}
                 {notification.role && <RoleBadge role={notification.role} />}
                 {notification.action && (
                   <span className="ml-1">{notification.action}</span>

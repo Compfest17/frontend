@@ -6,6 +6,7 @@ import { User, Phone, Mail, X, Save, Image } from 'lucide-react';
 import { getCurrentUser } from '@/lib/supabase-auth';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ImageUpload from '@/components/ImageUpload';
+import { toast } from 'react-toastify';
 
 export default function ProfileEditModal({ user, onSuccess, onCancel }) {
   const [formData, setFormData] = useState({
@@ -26,7 +27,7 @@ export default function ProfileEditModal({ user, onSuccess, onCancel }) {
     e.preventDefault();
     
     if (!formData.full_name.trim()) {
-      alert('Nama lengkap wajib diisi');
+      toast.error('Nama lengkap wajib diisi');
       return;
     }
 
@@ -80,14 +81,14 @@ export default function ProfileEditModal({ user, onSuccess, onCancel }) {
           window.dispatchEvent(new CustomEvent('profile:updated', { detail: 'profileUpdated' }));
         } catch (_) {}
         onSuccess();
-        alert('Profile berhasil diupdate!');
+        toast.success('Profile berhasil diupdate!');
       } else {
         const error = await response.json();
-        alert(error.message || 'Gagal update profile');
+        toast.error(error.message || 'Gagal update profile');
       }
     } catch (error) {
       console.error('Failed to update profile:', error);
-      alert('Gagal update profile');
+      toast.error('Gagal update profile');
     } finally {
       setLoading(false);
     }
