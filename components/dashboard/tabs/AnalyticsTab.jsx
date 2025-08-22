@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { 
   BarChart3, 
@@ -23,10 +23,12 @@ export default function AnalyticsTab({ user }) {
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [mapData, setMapData] = useState({ markers: [], center: [-6.2088, 106.8456], coverage: null, boundaryGeoJSON: null });
+  const boundaryCacheRef = useRef({});
+  const markersCacheRef = useRef({});
 
   useEffect(() => {
     fetchAnalytics();
-  }, [user]);
+  }, [user.id, user.role, user.assigned_province]);
 
   const fetchAnalytics = async () => {
     try {
@@ -47,7 +49,7 @@ export default function AnalyticsTab({ user }) {
         setAnalytics(result.data);
         if (user.role === 'karyawan') {
           const provinceName = result.data.province || user.assigned_province;
-          if (provinceName) {
+          if (provinceName && !mapData.boundaryGeoJSON) {
             const coverage = buildCoverageFromUser(user);
             await updateMapForProvince(provinceName, coverage);
           }
@@ -63,20 +65,42 @@ export default function AnalyticsTab({ user }) {
   const updateMapForProvince = async (province, coverage) => {
     try {
       if (!province) return;
+      
+      if (boundaryCacheRef.current[province] && markersCacheRef.current[province]) {
+        console.log(`Using cached data for province: ${province}`);
+        const existingBoundary = boundaryCacheRef.current[province];
+        const existingMarkers = markersCacheRef.current[province];
+        const center = existingMarkers && existingMarkers.length > 0 ? [existingMarkers[0].lat, existingMarkers[0].lng] : [-6.2088, 106.8456];
+        setMapData({ markers: existingMarkers || [], center, coverage, boundaryGeoJSON: existingBoundary });
+        return;
+      }
+      
+      console.log(`Fetching fresh data for province: ${province}`);
+      
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
       const { user: currentUser } = await getCurrentUser();
-      let boundaryGeoJSON = null;
+
+      let boundaryGeoJSON = boundaryCacheRef.current[province] || null;
       try {
+        if (!boundaryGeoJSON) {
         const boundaryRes = await fetch(`${API_BASE_URL}/api/geocoding/province-boundary?province=${encodeURIComponent(province)}`, {
           headers: { 'Authorization': `Bearer ${currentUser.access_token}` }
         });
         if (boundaryRes.ok) {
           const boundaryData = await boundaryRes.json();
           boundaryGeoJSON = boundaryData.data?.geojson || null;
+            if (boundaryGeoJSON) {
+              boundaryCacheRef.current[province] = boundaryGeoJSON;
+              console.log(`Cached boundary for province: ${province}`);
+            }
+          }
         }
       } catch (e) {
         console.warn('Boundary fetch failed', e);
       }
+
+      let markers = markersCacheRef.current[province] || null;
+      if (!markers) {
       const response = await fetch(`${API_BASE_URL}/api/forums/by-province/${encodeURIComponent(province)}`, {
         headers: {
           'Authorization': `Bearer ${currentUser.access_token}`
@@ -84,7 +108,7 @@ export default function AnalyticsTab({ user }) {
       });
       if (response.ok) {
         const reports = await response.json();
-        let markers = (reports.data || []).map(report => ({
+          markers = (reports.data || []).map(report => ({
           lat: report.latitude,
           lng: report.longitude,
           status: report.status,
@@ -95,17 +119,26 @@ export default function AnalyticsTab({ user }) {
               <span class="inline-block mt-1 px-2 py-1 text-xs rounded ${
                 report.status === 'resolved' ? 'bg-green-100 text-green-800' :
                 report.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
-                'bg-red-100 text-red-800'
+                  report.status === 'closed' ? 'bg-red-100 text-red-800' :
+                  'bg-blue-100 text-blue-800'
               }">
-                ${report.status}
+                  ${report.status === 'open' ? 'Terbuka' :
+                    report.status === 'in_progress' ? 'Proses' :
+                    report.status === 'resolved' ? 'Selesai' :
+                    report.status === 'closed' ? 'Dibatalkan' : report.status}
               </span>
             </div>
           `
         }));
+          markersCacheRef.current[province] = markers;
+          console.log(`Cached markers for province: ${province}`);
+        }
+      }
+
         if (coverage && coverage.lat && coverage.lng && coverage.radius) {
           const toRad = (v) => (v * Math.PI) / 180;
           const earthR = 6371000;
-          markers = markers.filter(m => {
+        markers = (markers || []).filter(m => {
             const dLat = toRad(m.lat - coverage.lat);
             const dLng = toRad(m.lng - coverage.lng);
             const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(toRad(coverage.lat)) * Math.cos(toRad(m.lat)) * Math.sin(dLng/2) * Math.sin(dLng/2);
@@ -114,9 +147,9 @@ export default function AnalyticsTab({ user }) {
             return d <= coverage.radius;
           });
         }
-        const center = markers.length > 0 ? [markers[0].lat, markers[0].lng] : [-6.2088, 106.8456];
-        setMapData({ markers, center, coverage, boundaryGeoJSON });
-      }
+
+      const center = markers && markers.length > 0 ? [markers[0].lat, markers[0].lng] : [-6.2088, 106.8456];
+      setMapData({ markers: markers || [], center, coverage, boundaryGeoJSON });
     } catch (error) {
       console.error('Failed to fetch province reports:', error);
     }
@@ -155,23 +188,23 @@ export default function AnalyticsTab({ user }) {
 
   const statsCards = [
     {
-      title: 'Total Assigned',
-      value: analytics.totalAssigned || 0,
+      title: 'Total Laporan',
+      value: (analytics.totalReports || analytics.totalAssigned || 0),
       icon: BarChart3,
       color: 'bg-[#DD761C]',
       bgColor: 'bg-orange-50',
       textColor: 'text-orange-800'
     },
     {
-      title: 'Completed',
-      value: analytics.completed || 0,
-      icon: CheckCircle,
+      title: 'Terbuka',
+      value: analytics.open || 0,
+      icon: AlertCircle,
       color: 'bg-[#DD761C]',
       bgColor: 'bg-orange-50',
       textColor: 'text-orange-800'
     },
     {
-      title: 'In Progress',
+      title: 'Proses',
       value: analytics.inProgress || 0,
       icon: Clock,
       color: 'bg-[#DD761C]',
@@ -179,9 +212,17 @@ export default function AnalyticsTab({ user }) {
       textColor: 'text-orange-800'
     },
     {
-      title: 'Pending',
-      value: analytics.pending || 0,
-      icon: AlertCircle,
+      title: 'Selesai',
+      value: analytics.resolved || analytics.resolvedCount || 0,
+      icon: CheckCircle,
+      color: 'bg-[#DD761C]',
+      bgColor: 'bg-orange-50',
+      textColor: 'text-orange-800'
+    },
+    {
+      title: 'Dibatalkan',
+      value: analytics.closed || 0,
+      icon: CheckCircle,
       color: 'bg-[#DD761C]',
       bgColor: 'bg-orange-50',
       textColor: 'text-orange-800'
@@ -200,7 +241,7 @@ export default function AnalyticsTab({ user }) {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         {statsCards.map((stat, index) => {
           const Icon = stat.icon;
           return (
@@ -248,16 +289,20 @@ export default function AnalyticsTab({ user }) {
           </div>
           <div className="mt-4 flex flex-wrap gap-4 text-sm">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-              <span>Open Reports</span>
+              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+              <span>Terbuka</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-              <span>In Progress</span>
+              <span>Proses</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-              <span>Resolved</span>
+              <span>Selesai</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+              <span>Dibatalkan</span>
             </div>
           </div>
         </motion.div>

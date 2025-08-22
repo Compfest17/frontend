@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import StatusBadge from './StatusBadge';
 import ForumAPI from '../../services/forumAPI';
 import { getCurrentUser } from '../../lib/supabase-auth';
+import MentionAutocomplete from '../forum/MentionAutocomplete';
+import RoleBadge from '../forum/RoleBadge';
 
 export default function ForumCard({ post, rank }) {
   const router = useRouter();
@@ -662,6 +664,7 @@ export default function ForumCard({ post, rank }) {
                             <span className="font-semibold text-sm">
                               {comment.users?.full_name || 'Anonymous'}
                             </span>
+                            <RoleBadge role={comment.users?.roles?.name} />
                             <span className="text-gray-500 text-xs">
                               {new Date(comment.created_at).toLocaleDateString('id-ID')}
                             </span>
@@ -728,6 +731,7 @@ export default function ForumCard({ post, rank }) {
                                   <span className="font-semibold text-sm">
                                     {reply.users?.full_name || 'Anonymous'}
                                   </span>
+                                  <RoleBadge role={reply.users?.roles?.name} />
                                   <span className="text-gray-500 text-xs">
                                     {new Date(reply.created_at).toLocaleDateString('id-ID')}
                                   </span>
@@ -788,13 +792,12 @@ export default function ForumCard({ post, rank }) {
                     <div className="mb-2 text-sm text-gray-600">
                       Balas ke <span className="font-semibold">{replyingTo.users?.full_name || 'Anonymous'}</span>
                     </div>
-                    <textarea
+                    <MentionAutocomplete
+                      forumId={post.id}
                       value={replyText}
-                      onChange={(e) => setReplyText(e.target.value)}
-                      placeholder="Tulis balasan..."
-                      className="w-full p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      rows={3}
-                      disabled={submittingReply}
+                      onChange={setReplyText}
+                      placeholder="Tulis balasan... Gunakan @ untuk mention user..."
+                      className="p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                     />
                     <div className="flex justify-end gap-2 mt-2">
                       <button 
@@ -830,13 +833,12 @@ export default function ForumCard({ post, rank }) {
                     onError={(e) => { e.currentTarget.src = "/image/forum/test/profil-test.jpg"; }}
                   />
                   <div className="flex-1">
-                    <textarea
+                    <MentionAutocomplete
+                      forumId={post.id}
                       value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      placeholder="Tulis komentar..."
-                      className="w-full p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      rows={3}
-                      disabled={submittingComment}
+                      onChange={setNewComment}
+                      placeholder="Tulis komentar... Gunakan @ untuk mention user..."
+                      className="p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                     />
                     <div className="flex justify-end mt-2">
                       <button 

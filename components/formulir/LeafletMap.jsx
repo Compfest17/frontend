@@ -74,6 +74,7 @@ export default function LeafletMap({
           position: 'relative',
           zIndex: 1
         }}
+        preferCanvas={true}
         zoomControl={true}
         scrollWheelZoom={true}
         doubleClickZoom={false}
@@ -93,7 +94,7 @@ export default function LeafletMap({
         
         {markers.map((marker, index) => {
           const status = marker.status || null;
-          const color = status === 'resolved' ? '#22c55e' : status === 'in_progress' ? '#f59e0b' : status === 'open' ? '#ef4444' : '#3b82f6';
+          const color = status === 'resolved' ? '#22c55e' : status === 'in_progress' ? '#f59e0b' : status === 'open' ? '#3b82f6' : '#ef4444';
           if (status) {
             return (
               <CircleMarker key={index} center={[marker.lat, marker.lng]} radius={8} pathOptions={{ color, fillColor: color, fillOpacity: 0.9 }}>
@@ -125,7 +126,7 @@ export default function LeafletMap({
         )}
 
         {boundaryGeoJSON && (
-          <GeoJSON data={boundaryGeoJSON} style={boundaryStyle} />
+          <GeoJSON data={boundaryGeoJSON} style={boundaryStyle} interactive={false} />
         )}
       </MapContainer>
     </div>

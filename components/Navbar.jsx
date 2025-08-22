@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from "react";
 import { Menu, X, User, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,16 +10,15 @@ import { getCurrentUser, signOut } from '@/lib/supabase-auth';
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(undefined);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
-  // Ambil role dari user
   const userRole = user?.user_metadata?.role || user?.role || null;
 
-  // Dashboard hanya untuk karyawan/admin
   const navItems = [
     ...(userRole === 'karyawan' || userRole === 'admin'
       ? [{ name: 'Dashboard', href: '/dashboard' }]
@@ -84,6 +83,7 @@ export default function Navbar() {
       await signOut();
       setUser(null);
       setIsUserMenuOpen(false);
+      router.push('/login');
     } catch (error) {
       console.error('Sign out error:', error);
     }
@@ -261,24 +261,23 @@ export default function Navbar() {
           }}
           className="hidden md:flex items-center gap-4"
         >
-          {user ? (
+          {user === undefined ? (
+            <div className="w-28 h-8" />
+          ) : user ? (
             /* User is logged in */
             <div className="relative">
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors duration-300"
               >
-                {user.avatar_url || user.user_metadata?.avatar_url ? (
-                  <img 
-                    src={user.avatar_url || user.user_metadata?.avatar_url} 
-                    alt="Avatar" 
-                    className="w-8 h-8 rounded-full"
-                  />
-                ) : (
-                  <User className="w-5 h-5 text-gray-600" />
-                )}
+                <img 
+                  src={`${(user.avatar_url || user.user_metadata?.avatar_url || '/image/forum/test/profil-test.jpg')}${user?.updated_at ? `?v=${encodeURIComponent(user.updated_at)}` : ''}`} 
+                  alt="Avatar" 
+                  className="w-8 h-8 rounded-full object-cover"
+                  onError={(e) => { e.currentTarget.src = '/image/forum/test/profil-test.jpg'; }}
+                />
                 <span className="text-sm font-medium text-gray-700">
-                  {user.user_metadata?.full_name || user.email.split('@')[0]}
+                  {user.full_name || user.user_metadata?.full_name || user.email.split('@')[0]}
                 </span>
               </button>
               
@@ -418,7 +417,7 @@ export default function Navbar() {
                       )}
                       <div>
                         <p className="font-medium text-gray-800">
-                          {user.user_metadata?.full_name || user.email.split('@')[0]}
+                          {user.full_name || user.user_metadata?.full_name || user.email.split('@')[0]}
                         </p>
                         <p className="text-sm text-gray-600">{user.email}</p>
                       </div>

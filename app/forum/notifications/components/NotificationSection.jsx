@@ -2,11 +2,21 @@
 import { useEffect, useState } from 'react';
 import NotificationItem from '../../../../components/forum/NotificationItem';
 import { getCurrentUser } from '@/lib/supabase-auth';
+import { useRealtimeNotifications } from '@/hooks/useRealtimeReports';
 
 export default function NotificationSection() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  const { isConnected } = useRealtimeNotifications({
+    userId: currentUser?.id,
+    onNotification: (newNotification) => {
+      console.log('New notification received in real-time:', newNotification);
+      setNotifications(prev => [newNotification, ...prev]);
+    }
+  });
 
   useEffect(() => {
     loadNotifications();
@@ -22,6 +32,8 @@ export default function NotificationSection() {
         setLoading(false);
         return;
       }
+      
+      setCurrentUser(user);
 
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
       const response = await fetch(`${API_BASE_URL}/api/notifications`, {
@@ -37,7 +49,10 @@ export default function NotificationSection() {
 
       const result = await response.json();
       
+      console.log('🔍 Frontend - API response:', result);
+      
       if (result.success) {
+        console.log('🔍 Frontend - Setting notifications:', result.data);
         setNotifications(result.data || []);
         setError(null);
       } else {
@@ -60,6 +75,12 @@ export default function NotificationSection() {
         <div className="p-4">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-xl font-bold text-gray-900">Notifikasi</h1>
+            {isConnected && (
+              <span className="text-green-600 text-sm flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                Real-time active
+              </span>
+            )}
           </div>
         </div>
       </div>

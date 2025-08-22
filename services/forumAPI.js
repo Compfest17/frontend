@@ -241,7 +241,6 @@ class ForumAPI {
    */
   static async getTrending(limit = 10) {
     try {
-      console.log(`🔥 Fetching top ${limit} trending posts...`);
       
       const response = await fetch(`${API_BASE_URL}/api/forums/trending?limit=${limit}`);
       const result = await response.json();
@@ -250,7 +249,6 @@ class ForumAPI {
         throw new Error(result.message || 'Failed to fetch trending posts');
       }
 
-      console.log(`📊 Got ${result.data?.length || 0} trending posts`);
       return result;
     } catch (error) {
       console.error('Error fetching trending posts:', error);
@@ -259,6 +257,21 @@ class ForumAPI {
         data: [],
         error: error.message
       };
+    }
+  }
+
+  /**
+   * Get home summary: total reports, recent (last 3 days WIB), resolved, markers
+   */
+  static async getHomeSummary() {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/forums/home/summary`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to fetch home summary');
+      return data;
+    } catch (error) {
+      console.error('Error fetching home summary:', error);
+      throw error;
     }
   }
 }

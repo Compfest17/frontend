@@ -2,17 +2,36 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import ForumCard from "../../components/formulir/ForumCard";
-import forumData from "../../data/forumData.json";
+import ForumAPI from "@/services/forumAPI";
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 
 export default function KomunitasSection() {
-  const [posts, setPosts] = useState(forumData.posts);
-  const [filteredPosts, setFilteredPosts] = useState(forumData.posts);
+  const [posts, setPosts] = useState([]);
+  const [filteredPosts, setFilteredPosts] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     AOS.init();
+  }, []);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await ForumAPI.getForums({ page: 1, limit: 9 });
+        if (res.success && Array.isArray(res.data)) {
+          setPosts(res.data);
+          setFilteredPosts(res.data);
+        } else if (res.success && res.data?.data) {
+          setPosts(res.data.data);
+          setFilteredPosts(res.data.data);
+        }
+      } catch (_) {
+        setPosts([]);
+        setFilteredPosts([]);
+      }
+    };
+    load();
   }, []);
 
   const postsPerPage = 3;

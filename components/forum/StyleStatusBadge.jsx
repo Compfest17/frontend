@@ -1,25 +1,28 @@
 import StatusBadge from '../formulir/StatusBadge';
 
-// List all possible steps in order
-const ALL_STEPS = [
-  { status: 'new', label: 'Laporan Dibuat' },
-  { status: 'in_progress', label: 'Sedang Diproses' },
-  { status: 'resolved', label: 'Selesai' },
-];
-
 export default function StyleStatusBadge({ history }) {
-  // Map history by status for quick lookup
   const historyMap = {};
   history.forEach(h => { historyMap[h.status] = h; });
 
+  const finalStatus = history[history.length - 1]?.status;
+  const hasFinal = finalStatus === 'closed' || finalStatus === 'resolved';
+  const finalStepStatus = hasFinal ? finalStatus : 'resolved';
+  const finalLabel = hasFinal ? (finalStatus === 'closed' ? 'Dibatalkan' : 'Selesai') : 'Selesai/Dibatalkan';
+  const finalDate = historyMap[finalStepStatus]?.date;
+
+  const stepsToShow = [
+    { status: 'new', label: 'Laporan Dibuat', date: historyMap['new']?.date },
+    { status: 'in_progress', label: 'Sedang Diproses', date: historyMap['in_progress']?.date },
+    { status: finalStepStatus, label: finalLabel, date: finalDate }
+  ];
+
   return (
     <div className="relative flex flex-col items-center">
-      {ALL_STEPS.map((step, idx) => {
+      {stepsToShow.map((step, idx) => {
         const reached = !!historyMap[step.status];
-        const date = historyMap[step.status]?.date;
+        const date = step.date;
         return (
-          <div key={step.status} className="flex flex-col items-center relative">
-            {/* Timeline vertical line above (except first) */}
+          <div key={`${step.status}-${idx}`} className="flex flex-col items-center relative">
             {idx > 0 && (
               <div className="flex flex-col items-center">
                 <div className="w-0.5 h-8 bg-gray-300"></div>
@@ -29,11 +32,9 @@ export default function StyleStatusBadge({ history }) {
                 <div className="w-0.5 h-8 bg-gray-300"></div>
               </div>
             )}
-            {/* Badge: gray if not reached, label only in badge */}
             <span className={reached ? '' : 'opacity-60'}>
               <StatusBadge status={reached ? step.status : 'disabled'} text={step.label} />
             </span>
-            {/* Date */}
             {date && (
               <span className="text-sm text-gray-500 mt-1">{date}</span>
             )}

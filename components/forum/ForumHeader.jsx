@@ -24,7 +24,7 @@ export default function ForumHeader({ onSearch, onTabChange, onStatusFilter, act
 
   const tabs = ['Untuk Anda', ...(isMobile ? ['Trending'] : []), 'Status'];
 
-  const statusOptions = ['Semua Status', 'Terbuka', 'Sedang di proses', 'Selesai', 'Batal'];
+  const statusOptions = ['Semua Status', 'Terbuka', 'Sedang di proses', 'Selesai', 'Dibatalkan'];
 
   const handleSearch = (e) => {
     const value = e.target.value;

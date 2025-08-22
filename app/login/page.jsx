@@ -37,7 +37,6 @@ export default function LoginPage() {
       const { data, error } = await signIn(formData.email, formData.password);
 
       if (error) {
-        // Handle specific error cases
         if (error.message.includes('Invalid login credentials') || 
             error.message.includes('invalid credentials') ||
             error.message.includes('Invalid email or password')) {
@@ -61,12 +60,29 @@ export default function LoginPage() {
       if (data.user) {
         console.log('Login successful:', data);
         localStorage.setItem('supabase_session', JSON.stringify(data.session));
-        router.push('/dashboard');
+        try {
+          const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+          const res = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+            headers: { 'Authorization': `Bearer ${data.session.access_token}` }
+          });
+          if (res.ok) {
+            const profile = await res.json();
+            const role = profile?.data?.user?.role;
+            if (role === 'admin' || role === 'karyawan') {
+              router.push('/dashboard');
+            } else {
+              router.push('/forum');
+            }
+          } else {
+            router.push('/forum');
+          }
+        } catch (_) {
+          router.push('/forum');
+        }
       }
     } catch (error) {
       console.error('Login failed:', error);
       
-      // Handle different error types
       if (error.message.includes('Invalid login credentials') || 
           error.message.includes('invalid credentials') ||
           error.message.includes('Invalid email or password')) {

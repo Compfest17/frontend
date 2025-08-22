@@ -162,7 +162,6 @@ export default function ForumPostPage({ params }) {
   }, [resolvedParams.id, reloadComments]);
 
   useEffect(() => {
-    // Fetch all posts and filter for recommendations
     async function fetchRecommendations() {
       if (!post) return;
       try {
@@ -171,7 +170,6 @@ export default function ForumPostPage({ params }) {
         const data = await res.json();
         if (!data.success || !Array.isArray(data.data)) return;
 
-        // Get keywords from current post (title, description, tags)
         const keywords = [];
         if (post.title) keywords.push(...post.title.toLowerCase().split(/\s+/));
         if (post.description) keywords.push(...post.description.toLowerCase().split(/\s+/));
@@ -179,20 +177,16 @@ export default function ForumPostPage({ params }) {
           keywords.push(...post.forum_tags.map(tag => (tag.tags?.name || tag.name || tag).toLowerCase()));
         }
 
-        // Remove duplicates and short/common words
         const uniqueKeywords = Array.from(new Set(keywords)).filter(k => k.length > 3);
 
-        // Filter posts by relevance
         const filtered = data.data
           .filter(p => p.id !== post.id)
           .map(p => {
-            // Combine searchable text
             const text = [
               p.title,
               p.description,
               ...(Array.isArray(p.forum_tags) ? p.forum_tags.map(tag => tag.tags?.name || tag.name || tag) : [])
             ].join(' ').toLowerCase();
-            // Count keyword matches
             const matchCount = uniqueKeywords.reduce((acc, kw) => text.includes(kw) ? acc + 1 : acc, 0);
             return { ...p, matchCount };
           })
@@ -279,12 +273,26 @@ export default function ForumPostPage({ params }) {
     return text.slice(0, maxLength) + '...';
   };
 
-  // Build statusHistory from real post data
+  console.log('🔍 Timeline Debug - Post data:', {
+    status: post?.status,
+    created_at: post?.created_at,
+    in_progress_at: post?.in_progress_at,
+    resolved_at: post?.resolved_at,
+    closed_at: post?.closed_at
+  });
+
   const statusHistory = [
     { status: 'new', label: 'Laporan Dibuat', date: post?.created_at?.slice(0,10) },
-    { status: 'in_progress', label: 'Sedang Diproses', date: post?.process_date },
-    { status: 'resolved', label: 'Selesai', date: post?.resolved_date },
+    { status: 'in_progress', label: 'Sedang Diproses', date: post?.in_progress_at ? post.in_progress_at.slice(0,10) : undefined },
+    ...(post?.status === 'resolved' && post?.resolved_at ? [
+      { status: 'resolved', label: 'Selesai', date: post.resolved_at.slice(0,10) }
+    ] : []),
+    ...(post?.status === 'closed' && post?.closed_at ? [
+      { status: 'closed', label: 'Dibatalkan', date: post.closed_at.slice(0,10) }
+    ] : []),
   ].filter(step => step.date);
+
+  console.log('🔍 Timeline Debug - Final statusHistory:', statusHistory);
 
   return (
     <div className="min-h-screen bg-white">
