@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { resetPassword } from '@/lib/supabase-auth';
@@ -42,6 +42,16 @@ export default function ForgotPasswordPage() {
       setIsLoading(false);
     }
   };
+
+  // Gunakan useCallback untuk menstabilkan fungsi agar tidak dibuat ulang setiap render
+  const handleTurnstileExpire = useCallback(() => {
+    setTurnstileToken('');
+  }, []); // Dependency array kosong, fungsi hanya dibuat sekali
+
+  const handleTurnstileError = useCallback((error) => {
+    setError(`Verifikasi gagal: ${error}`);
+    setTurnstileToken('');
+  }, []); // Dependency array kosong, fungsi hanya dibuat sekali
 
   const bannerSlides = [
     {
@@ -179,11 +189,8 @@ export default function ForgotPasswordPage() {
 
             <TurnstileWidget
               onVerify={setTurnstileToken}
-              onExpire={() => setTurnstileToken('')}
-              onError={(error) => {
-                setError(`Verifikasi gagal: ${error}`);
-                setTurnstileToken('');
-              }}
+              onExpire={handleTurnstileExpire}
+              onError={handleTurnstileError}
               className="my-4"
             />
 
