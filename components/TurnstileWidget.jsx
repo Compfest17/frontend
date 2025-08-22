@@ -1,78 +1,99 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, memo } from 'react';
 
-export default function TurnstileWidget({ 
+const TurnstileWidget = memo(({ 
   onVerify, 
   onExpire, 
   onError, 
   className = '',
   size = 'normal'
-}) {
+}) => {
   const containerRef = useRef(null);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [isVerified, setIsVerified] = useState(false);
+  const [isRendered, setIsRendered] = useState(false);
+  const widgetIdRef = useRef(null);
+  const scriptLoadedRef = useRef(false);
   
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
   const isEnabled = process.env.NEXT_PUBLIC_TURNSTILE_ENABLED === 'true';
   
   useEffect(() => {
-    if (!isEnabled || !siteKey) {
-      console.log('Turnstile disabled or site key not found');
+    if (!isEnabled || !siteKey || isRendered) {
       return;
     }
 
-    const loadTurnstile = () => {
-      if (window.turnstile) {
+    const loadTurnstile = async () => {
+      if (scriptLoadedRef.current && window.turnstile) {
         setIsLoaded(true);
-        renderWidget();
         return;
       }
 
-      const script = document.createElement('script');
-      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
-      script.async = true;
-      script.defer = true;
-      script.onload = () => {
-        setIsLoaded(true);
-        renderWidget();
-      };
-      script.onerror = () => {
-        console.error('Failed to load Turnstile script');
-        if (onError) onError('Failed to load Turnstile');
-      };
-      document.head.appendChild(script);
+      if (!scriptLoadedRef.current) {
+        const script = document.createElement('script');
+        script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+        script.async = true;
+        script.defer = true;
+        
+        script.onload = () => {
+          scriptLoadedRef.current = true;
+          setIsLoaded(true);
+        };
+        
+        script.onerror = () => {
+          console.error('Failed to load Turnstile script');
+          if (onError) onError('Failed to load Turnstile');
+        };
+        
+        document.head.appendChild(script);
+      }
     };
 
     loadTurnstile();
-  }, [isEnabled, siteKey, onError]);
+  }, [isEnabled, siteKey, isRendered]);
 
-  const renderWidget = () => {
-    if (!window.turnstile || !containerRef.current || !isLoaded) return;
+  useEffect(() => {
+    if (!isLoaded || !isEnabled || !siteKey || isRendered || !containerRef.current) {
+      return;
+    }
 
     try {
-      window.turnstile.render(containerRef.current, {
+      const widgetId = window.turnstile.render(containerRef.current, {
         sitekey: siteKey,
         theme: 'light',
         size: size,
         callback: (token) => {
-          setIsVerified(true);
           if (onVerify) onVerify(token);
         },
         'expired-callback': () => {
-          setIsVerified(false);
           if (onExpire) onExpire();
         },
         'error-callback': () => {
-          setIsVerified(false);
           if (onError) onError('Verification failed');
         }
       });
+      
+      widgetIdRef.current = widgetId;
+      setIsRendered(true);
+      console.log('Turnstile widget rendered successfully');
     } catch (error) {
       console.error('Error rendering Turnstile widget:', error);
       if (onError) onError('Widget rendering failed');
     }
-  };
+  }, [isLoaded, isEnabled, siteKey, size, onVerify, onExpire, onError, isRendered]);
+
+  useEffect(() => {
+    return () => {
+      if (widgetIdRef.current && window.turnstile && typeof window.turnstile.remove === 'function') {
+        try {
+          window.turnstile.remove(widgetIdRef.current);
+          console.log('Turnstile widget removed');
+        } catch (error) {
+          console.error('Error removing Turnstile widget:', error);
+        }
+      }
+    };
+  }, []);
 
   if (!isEnabled) {
     return null;
@@ -96,4 +117,8 @@ export default function TurnstileWidget({
       />
     </div>
   );
-}
+});
+
+TurnstileWidget.displayName = 'TurnstileWidget';
+
+export default TurnstileWidget;
