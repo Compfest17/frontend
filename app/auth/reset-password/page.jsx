@@ -26,6 +26,9 @@ export default function ResetPasswordPage() {
   // Ini adalah kunci paling ampuh untuk menghentikan bootloop.
   const validationLock = useRef(false);
 
+  // Guard to prevent clearing a verified Turnstile token repeatedly
+  const tokenLock = useRef(false);
+
   useEffect(() => {
     // Cek format link secara sinkron saat komponen dimuat.
     const hash = window.location.hash;
@@ -117,11 +120,24 @@ export default function ResetPasswordPage() {
     }
   };
 
-  // Stabilize Turnstile callbacks
-  const handleTurnstileExpire = useCallback(() => setTurnstileToken(''), []);
+  // Stabilize Turnstile callbacks with a guard so token isn't reset after successful verify
+  const handleTurnstileExpire = useCallback(() => {
+    if (!tokenLock.current) {
+      setTurnstileToken('');
+    }
+  }, []);
+
   const handleTurnstileError = useCallback((err) => {
-    setError(`Verifikasi gagal: ${err}`);
-    setTurnstileToken('');
+    if (!tokenLock.current) {
+      setError(`Verifikasi gagal: ${err}`);
+      setTurnstileToken('');
+    }
+  }, []);
+
+  // Called when Turnstile verification succeeds; lock token to avoid future clears
+  const handleVerify = useCallback((token) => {
+    setTurnstileToken(token);
+    tokenLock.current = true;
   }, []);
 
   const bannerSlides = [
@@ -268,7 +284,7 @@ export default function ResetPasswordPage() {
               </div>
 
               <TurnstileWidget
-                onVerify={setTurnstileToken}
+                onVerify={handleVerify}
                 onExpire={handleTurnstileExpire}
                 onError={handleTurnstileError}
                 className="my-4"
