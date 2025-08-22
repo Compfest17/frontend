@@ -1,22 +1,30 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { resetPassword } from '@/lib/supabase-auth';
 import { getAuthError } from '@/lib/authUtils';
 import BannerSlider from '@/components/auth/BannerSlider';
+import TurnstileWidget from '@/components/TurnstileWidget';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+
+    if (process.env.NEXT_PUBLIC_TURNSTILE_ENABLED === 'true' && !turnstileToken) {
+      setError('Silakan verifikasi Turnstile terlebih dahulu');
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const { error } = await resetPassword(email);
@@ -34,6 +42,16 @@ export default function ForgotPasswordPage() {
       setIsLoading(false);
     }
   };
+
+  // Gunakan useCallback untuk menstabilkan fungsi agar tidak dibuat ulang setiap render
+  const handleTurnstileExpire = useCallback(() => {
+    setTurnstileToken('');
+  }, []); // Dependency array kosong, fungsi hanya dibuat sekali
+
+  const handleTurnstileError = useCallback((error) => {
+    setError(`Verifikasi gagal: ${error}`);
+    setTurnstileToken('');
+  }, []); // Dependency array kosong, fungsi hanya dibuat sekali
 
   const bannerSlides = [
     {
@@ -168,6 +186,13 @@ export default function ForgotPasswordPage() {
                 disabled={isLoading}
               />
             </div>
+
+            <TurnstileWidget
+              onVerify={setTurnstileToken}
+              onExpire={handleTurnstileExpire}
+              onError={handleTurnstileError}
+              className="my-4"
+            />
 
             <div className="pt-4">
               <button

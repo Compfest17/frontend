@@ -2,21 +2,29 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from "react";
-import { Menu, X } from "lucide-react";
+import { Menu, X, User, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { getCurrentUser, signOut } from '@/lib/supabase-auth';
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [user, setUser] = useState(undefined);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
+  const userRole = user?.user_metadata?.role || user?.role || null;
 
   const navItems = [
-    { name: 'Dashboard', href: '/' },
-    { name: 'Formulir', href: '/formulir' },
+    ...(userRole === 'karyawan' || userRole === 'admin'
+      ? [{ name: 'Dashboard', href: '/dashboard' }]
+      : []),
     { name: 'Forum', href: '/forum' },
+    { name: 'About Us', href: '/about' },
   ];
 
   useEffect(() => {
@@ -25,11 +33,35 @@ export default function Navbar() {
       setIsScrolled(scrollTop > 0);
     };
 
-    // Set loaded state after component mounts with small delay for smoother effect
+    const checkUser = async () => {
+      try {
+        const { user: authUser } = await getCurrentUser();
+        if (!authUser) {
+          setUser(null);
+          return;
+        }
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+        const res = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+          headers: { 'Authorization': `Bearer ${authUser.access_token}` }
+        });
+        if (res.ok) {
+          const profile = await res.json();
+          const merged = { ...authUser, ...profile.data.user };
+          setUser(merged);
+        } else {
+          setUser(authUser);
+        }
+      } catch (error) {
+        console.log('No authenticated user');
+        setUser(null);
+      }
+    };
+
     const timer = setTimeout(() => {
       setIsLoaded(true);
     }, 100);
 
+    checkUser();
     window.addEventListener('scroll', handleScroll);
     return () => {
       window.removeEventListener('scroll', handleScroll);
@@ -44,6 +76,42 @@ export default function Navbar() {
   const closeMenu = () => {
     setIsMenuOpen(false);
   };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      setUser(null);
+      setIsUserMenuOpen(false);
+      router.push('/login');
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
+  };
+
+  useEffect(() => {
+    const handler = async (e) => {
+      if (e.detail === 'profileUpdated') {
+        try {
+          await (async () => {
+            const { user: authUser } = await getCurrentUser();
+            if (!authUser) return setUser(null);
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            const res = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+              headers: { 'Authorization': `Bearer ${authUser.access_token}` }
+            });
+            if (res.ok) {
+              const profile = await res.json();
+              setUser({ ...authUser, ...profile.data.user });
+            } else {
+              setUser(authUser);
+            }
+          })();
+        } catch (_) {}
+      }
+    };
+    window.addEventListener('profile:updated', handler);
+    return () => window.removeEventListener('profile:updated', handler);
+  }, []);
 
   const navbarVariants = {
     hidden: {
@@ -181,7 +249,7 @@ export default function Navbar() {
           ))}
         </motion.nav>
 
-        {/* Desktop Login Button */}
+        {/* Desktop Login/User Section */}
         <motion.div 
           initial={{ opacity: 0, x: 40 }}
           animate={{ opacity: 1, x: 0 }}
@@ -192,24 +260,72 @@ export default function Navbar() {
           }}
           className="hidden md:flex items-center gap-4"
         >
-          <Link 
-            href="/login" 
-            className="text-gray-600 hover:text-black transition-colors duration-300 ease-out text-sm font-medium"
-          >
-            Sign In
-          </Link>
-          <Link 
-            href="/register" 
-            className="bg-transparent border-2 border-gray-800 text-gray-800 px-6 py-2 rounded-full hover:bg-gray-800 hover:text-white transition-all duration-300 ease-out text-sm font-medium transform hover:scale-105"
-          >
-            Sign Up
-          </Link>
-          <Link 
-            href="/profile" 
-            className="bg-transparent border-2 border-gray-800 text-gray-800 px-6 py-2 rounded-full hover:bg-gray-800 hover:text-white transition-all duration-300 ease-out text-sm font-medium transform hover:scale-105"
-          >
-            Profile
-          </Link>
+          {user === undefined ? (
+            <div className="w-28 h-8" />
+          ) : user ? (
+            /* User is logged in */
+            <div className="relative">
+              <button
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors duration-300"
+              >
+                <img 
+                  src={`${(user.avatar_url || user.user_metadata?.avatar_url || '/image/forum/test/profil-test.jpg')}${user?.updated_at ? `?v=${encodeURIComponent(user.updated_at)}` : ''}`} 
+                  alt="Avatar" 
+                  className="w-8 h-8 rounded-full object-cover"
+                  onError={(e) => { e.currentTarget.src = '/image/forum/test/profil-test.jpg'; }}
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  {user.full_name || user.user_metadata?.full_name || user.email.split('@')[0]}
+                </span>
+              </button>
+              
+              {/* User Dropdown Menu */}
+              <AnimatePresence>
+                {isUserMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50"
+                  >
+                    <Link
+                      href="/profile"
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <User className="w-4 h-4" />
+                      Profile
+                    </Link>
+                    <button
+                      onClick={handleSignOut}
+                      className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Logout
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ) : (
+            /* User is not logged in */
+            <>
+              <Link 
+                href="/login" 
+                className="text-gray-600 hover:text-black transition-colors duration-300 ease-out text-sm font-medium"
+              >
+                Sign In
+              </Link>
+              <Link 
+                href="/register" 
+                className="bg-transparent border-2 border-gray-800 text-gray-800 px-6 py-2 rounded-full hover:bg-gray-800 hover:text-white transition-all duration-300 ease-out text-sm font-medium transform hover:scale-105"
+              >
+                Sign Up
+              </Link>
+            </>
+          )}
         </motion.div>
 
         {/* Mobile Hamburger Button */}
@@ -272,7 +388,7 @@ export default function Navbar() {
                 ))}
               </nav>
 
-              {/* Mobile Login Button */}
+              {/* Mobile Login/User Section */}
               <motion.div 
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -283,18 +399,64 @@ export default function Navbar() {
                 }}
                 className="pt-6 border-t border-white/30 space-y-4"
               >
-                <Link
-                  href="/login"
-                  onClick={closeMenu}
-                  className="block text-gray-600 hover:text-black py-3 px-4 text-center transition-all duration-300 ease-out font-medium hover:transform hover:scale-105"
-                >Sign In
-                </Link>
-                <Link
-                  href="/register"
-                  onClick={closeMenu}
-                  className="block bg-transparent border-2 border-gray-800/90 text-gray-800 px-4 py-3 rounded-full text-center hover:bg-gray-800/90 hover:text-white transition-all duration-300 ease-out font-medium backdrop-blur-sm transform hover:scale-105"
-                >Sign Up
-                </Link>
+                {user ? (
+                  /* Mobile User Menu */
+                  <>
+                    <div className="flex items-center gap-3 px-4 py-3 bg-white/20 rounded-lg">
+                      {user.avatar_url || user.user_metadata?.avatar_url ? (
+                        <img 
+                          src={user.avatar_url || user.user_metadata?.avatar_url} 
+                          alt="Avatar" 
+                          className="w-10 h-10 rounded-full"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                          <User className="w-5 h-5 text-gray-600" />
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-medium text-gray-800">
+                          {user.full_name || user.user_metadata?.full_name || user.email.split('@')[0]}
+                        </p>
+                        <p className="text-sm text-gray-600">{user.email}</p>
+                      </div>
+                    </div>
+                    <Link
+                      href="/profile"
+                      onClick={closeMenu}
+                      className="flex items-center gap-2 px-4 py-3 text-gray-600 hover:text-black hover:bg-white/20 rounded-lg transition-all duration-300"
+                    >
+                      <User className="w-5 h-5" />
+                      Profile
+                    </Link>
+                    <button
+                      onClick={() => {
+                        handleSignOut();
+                        closeMenu();
+                      }}
+                      className="flex items-center gap-2 w-full px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-300"
+                    >
+                      <LogOut className="w-5 h-5" />
+                      Logout
+                    </button>
+                  </>
+                ) : (
+                  /* Mobile Login Buttons */
+                  <>
+                    <Link
+                      href="/login"
+                      onClick={closeMenu}
+                      className="block text-gray-600 hover:text-black py-3 px-4 text-center transition-all duration-300 ease-out font-medium hover:transform hover:scale-105"
+                    >Sign In
+                    </Link>
+                    <Link
+                      href="/register"
+                      onClick={closeMenu}
+                      className="block bg-transparent border-2 border-gray-800/90 text-gray-800 px-4 py-3 rounded-full text-center hover:bg-gray-800/90 hover:text-white transition-all duration-300 ease-out font-medium backdrop-blur-sm transform hover:scale-105"
+                    >Sign Up
+                    </Link>
+                  </>
+                )}
               </motion.div>
             </div>
           </motion.div>

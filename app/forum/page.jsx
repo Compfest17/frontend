@@ -1,11 +1,64 @@
+'use client';
+import { useState, useEffect, Suspense } from 'react';
+import Sidebar from '../../components/forum/Sidebar';
+import RightSidebar from '../../components/forum/RightSidebar';
+import ForumSection from './components/ForumSection';
+import ForumAPI from '../../services/forumAPI';
+import BottomBar from '../../components/forum/BottomBar';
+import MobileSidebarTrigger from '../../components/forum/MobileSidebarTrigger';
+
+//test
+
 export default function ForumPage() {
+  const [trendingDiscussions, setTrendingDiscussions] = useState([]);
+
+  const handlePostsLoaded = (posts) => {
+    const trending = [...posts]
+      .sort((a, b) => (b.views_count || 0) - (a.views_count || 0))
+      .slice(0, 10);
+    setTrendingDiscussions(trending);
+  };
+
+  useEffect(() => {
+    const fetchTrendingForSidebar = async () => {
+      try {
+        const response = await ForumAPI.getTrending(10);
+        if (response.success) {
+          setTrendingDiscussions(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching trending posts for sidebar:', error);
+      }
+    };
+
+    fetchTrendingForSidebar();
+  }, []);
+
   return (
-    <div className="container mx-auto p-4 sm:p-6">
-      <div className="bg-white p-8 rounded-xl shadow-sm">
-        <h1 className="text-3xl font-bold text-center">
-          Ini Halaman Forum
-        </h1>
+    <div className="min-h-screen bg-white">
+      <div className="flex max-w-7xl mx-auto relative">
+        {/* Left Sidebar - Desktop Only */}
+        <div className="hidden lg:block flex-shrink-0">
+          <Sidebar />
+        </div>
+
+        {/* Wrap ForumSection with Suspense */}
+        <Suspense fallback={<div className="flex-1 flex items-center justify-center p-8">Loading...</div>}>
+          <div className="flex-1 min-w-0 lg:px-0 px-0">
+            <ForumSection onPostsLoaded={handlePostsLoaded} />
+          </div>
+        </Suspense>
+
+        <div className="hidden xl:block flex-shrink-0">
+          <RightSidebar trendingDiscussions={trendingDiscussions} />
+        </div>
       </div>
+
+      {/* Mobile BottomBar */}
+      <BottomBar trendingDiscussions={trendingDiscussions} />
+
+      {/* Floating "Buat Laporan" Button for Mobile */}
+      <MobileSidebarTrigger />
     </div>
   );
 }

@@ -3,14 +3,28 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { Bell, MessageSquare } from 'lucide-react';
+import ForumAPI from "@/services/forumAPI";
+; 
+
 
 export default function HeroSection() {
   const [isLoaded, setIsLoaded] = useState(false);
+  const [summary, setSummary] = useState(null);
 
   useEffect(() => {
+
+    
     const timer = setTimeout(() => {
       setIsLoaded(true);
     }, 200);
+
+    const load = async () => {
+      try {
+        const res = await ForumAPI.getHomeSummary();
+        setSummary(res.data);
+      } catch (_) {}
+    };
+    load();
 
     return () => clearTimeout(timer);
   }, []);
@@ -94,6 +108,19 @@ export default function HeroSection() {
         delay: 1.6,
       },
     },
+  };
+
+  const statCardVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: (i) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: 2.2 + i * 0.15,
+        duration: 0.7,
+        ease: [0.25, 0.1, 0.25, 1],
+      },
+    }),
   };
 
   return (
@@ -283,6 +310,22 @@ export default function HeroSection() {
             </motion.div>
           </div>
         </motion.div>
+        
+      {/* Statistic (from backend) */}
+      <div className='flex flex-col md:flex-row mx-auto md:justify-center items-center md:gap-10 mt-20 gap-10 '>
+          {[{ id: 1, kategori: 'Laporan Baru', jumlah: summary?.recentReportsCount ?? '-' },
+            { id: 2, kategori: 'Total Laporan', jumlah: summary?.totalReports ?? '-' },
+            { id: 3, kategori: 'Laporan Selesai', jumlah: summary?.resolvedCount ?? '-' }
+          ].map((statistic) => (
+            <div key={statistic.id} className='bg-white border-1 border-zinc-100 shadow-md w-45 px-5 py-7 rounded-xl'
+              data-aos="fade-up"
+              data-aos-duration="1000">
+              <h3 className='text-center text-4xl text-[#DD761C] font-semibold mb-2'>{statistic.jumlah}</h3>
+              <p className='text-[#DD761C] text-base text-center'>{statistic.kategori}</p>
+            </div>
+          ))}
+        </div>
+
       </div>
     </section>
   );

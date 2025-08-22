@@ -1,52 +1,141 @@
 'use client';
 
-import { MapPin, Upload, Phone, X } from 'lucide-react';
+import { Phone } from 'lucide-react';
 import { useState } from 'react';
+import TagsInput from '@/components/formulir/TagsInput';
+import AddressInput from '@/components/formulir/AddressInput';
+import PhotoUploadDeferred from '@/components/formulir/PhotoUploadDeferred';
+import UploadStatus from '@/components/formulir/UploadStatus';
+import ForumAPI from '@/services/forumAPI';
+import { usePendingUploads } from '@/contexts/PendingUploadsContext';
+import { toast } from "react-toastify";
 
-export default function Formulir() {
-  const [uploadedFiles, setUploadedFiles] = useState([]);
+export default function Formulir({ user, onAuthRequired }) {
+  const { uploadAllPending, clearAllPending, getUploadStats } = usePendingUploads();
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    incident_date: '',
+    address: '',
+    addressData: null, 
+    coordinates: { lat: null, lon: null },
+    priority: '',
+    tags: [],
+    is_anonymous: false,
+    phone: ''
+  });
 
-  const handleFileUpload = (event) => {
-    const files = Array.from(event.target.files);
-    const validFiles = files.filter(file => {
-      const isValidType = file.type.includes('image/jpeg') || file.type.includes('image/png');
-      const isValidSize = file.size <= 5 * 1024 * 1024; // 5MB
-      return isValidType && isValidSize;
-    });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-    validFiles.forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const newFile = {
-          id: Date.now() + Math.random(),
-          file: file,
-          preview: e.target.result,
-          name: file.name
-        };
-        setUploadedFiles(prev => [...prev, newFile]);
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    
+    if (!user) {
+      onAuthRequired();
+      return;
+    }
+
+    if (user?.role === 'admin' || user?.role === 'karyawan') {
+      toast.error('Akun admin/karyawan tidak bisa mengirim formulir.');
+      return;
+    }
+
+    const uploadStats = getUploadStats();
+    
+    const hasValidAddress = formData.address && (
+      (formData.coordinates.lat && formData.coordinates.lon) ||
+      (formData.addressData?.coordinates?.lat && formData.addressData?.coordinates?.lng)
+    );
+    
+    if (!formData.title || !formData.description || !formData.incident_date || 
+        !hasValidAddress || !formData.priority) {
+      toast.error('Mohon lengkapi semua field yang wajib diisi dan pastikan alamat memiliki koordinat yang valid');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      let media_urls = [];
+      
+      if (uploadStats.total > 0) {
+        try {
+          console.log('📤 Starting image upload...');
+          const uploadedFiles = await uploadAllPending();
+          console.log('📷 Uploaded files:', uploadedFiles);
+          media_urls = uploadedFiles.map(file => ({
+            url: file.url,
+            type: file.type,
+            name: file.name,
+            size: file.size,
+            public_id: file.public_id
+          }));
+          console.log('📷 Media URLs to send:', media_urls);
+        } catch (uploadError) {
+          console.error('❌ Upload error:', uploadError);
+          toast.error('Gagal mengupload foto. Silakan coba lagi.');
+          return;
+        }
+      } else {
+        console.log('📷 No images to upload');
+      }
+
+      const submitData = {
+        title: formData.title,
+        description: formData.description,
+        incident_date: formData.incident_date,
+        address: formData.address,
+        latitude: formData.coordinates.lat,
+        longitude: formData.coordinates.lon,
+        priority: formData.priority,
+        is_anonymous: formData.is_anonymous,
+        tags: formData.tags,
+        media_urls: media_urls
       };
-      reader.readAsDataURL(file);
-    });
-  };
 
-  const removeFile = (fileId) => {
-    setUploadedFiles(prev => prev.filter(file => file.id !== fileId));
-  };
-
-  const handleDrop = (event) => {
-    event.preventDefault();
-    const files = Array.from(event.dataTransfer.files);
-    const fakeEvent = { target: { files } };
-    handleFileUpload(fakeEvent);
-  };
-
-  const handleDragOver = (event) => {
-    event.preventDefault();
+      const response = await ForumAPI.createForum(submitData, user.access_token);
+      
+      if (response.success) {
+        toast.success('Laporan berhasil dikirim!');
+        
+        clearAllPending();
+        
+        setFormData({
+          title: '',
+          description: '',
+          incident_date: '',
+          address: '',
+          coordinates: { lat: null, lon: null },
+          priority: '',
+          tags: [],
+          is_anonymous: false,
+          phone: ''
+        });
+        
+        window.location.href = '/forum';
+      } else {
+        throw new Error(response.message || 'Gagal mengirim laporan');
+      }
+    } catch (error) {
+      toast.error(`Error: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="bg-white p-6 sm:p-8 rounded-xl shadow-sm max-w-2xl mx-auto">
-      <form className="space-y-6">
+      {/* Upload Status */}
+      <UploadStatus />
+      
+      <form className="space-y-6" onSubmit={handleSubmit}>
         {/* Judul Laporan */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -54,8 +143,11 @@ export default function Formulir() {
           </label>
           <input
             type="text"
+            value={formData.title}
+            onChange={(e) => handleInputChange('title', e.target.value)}
             placeholder="Contoh: Jalan Berlubang di Jalan Sudirman"
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+            required
           />
         </div>
 
@@ -66,8 +158,11 @@ export default function Formulir() {
           </label>
           <textarea
             rows={4}
+            value={formData.description}
+            onChange={(e) => handleInputChange('description', e.target.value)}
             placeholder="Jelaskan detail kondisi jalan rusak, lokasi sekitar, dan dampaknya..."
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
+            required
           />
         </div>
 
@@ -78,98 +173,51 @@ export default function Formulir() {
           </label>
           <input
             type="date"
+            value={formData.incident_date}
+            onChange={(e) => handleInputChange('incident_date', e.target.value)}
+            max={new Date().toISOString().split('T')[0]} 
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+            required
           />
         </div>
 
-        {/* Lokasi Kejadian */}
+        {/* Lokasi Kejadian dengan OSM Integration */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Lokasi Kejadian <span className="text-red-500">*</span>
           </label>
-          <input
-            type="text"
+          <AddressInput
+            value={formData.address || ''}
+            coordinates={formData.coordinates || { lat: null, lon: null }}
+            onChange={(address) => handleInputChange('address', address)}
+            onCoordinatesChange={(coordinates) => handleInputChange('coordinates', coordinates)}
             placeholder="Alamat lengkap lokasi jalan rusak"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 mb-2"
+            authToken={user?.access_token}
           />
-          <div className="flex">
-            <input
-              type="text"
-              placeholder="Koordinat GPS (opsional)"
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-            />
-            <button
-              type="button"
-              className="px-4 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-md hover:bg-gray-200 focus:outline-none flex items-center gap-2"
-            >
-              <MapPin size={16} />
-            </button>
-          </div>
         </div>
 
-        {/* Foto Jalan Rusak */}
+        {/* Tags Input */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Foto Jalan Rusak
+            Tags <span className="text-gray-500">(opsional)</span>
           </label>
-          <div 
-            className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors"
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-          >
-            <Upload size={48} className="text-gray-400 mb-2 mx-auto" />
-            <p className="text-sm text-gray-600 mb-1">
-              Seret & lepas foto di sini, atau{' '}
-              <label className="font-medium cursor-pointer" style={{color: '#DD761C'}}>
-                Pilih Foto
-                <input
-                  type="file"
-                  multiple
-                  accept="image/jpeg,image/png"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-              </label>
-            </p>
-            <p className="text-xs text-gray-500">JPG, PNG Max. 5MB per file</p>
-          </div>
-
-          {/* Preview uploaded files */}
-          {uploadedFiles.length > 0 && (
-            <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {uploadedFiles.map((file) => (
-                <div key={file.id} className="relative group">
-                  <img
-                    src={file.preview}
-                    alt={file.name}
-                    className="w-full h-24 object-cover rounded-lg border border-gray-200"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeFile(file.id)}
-                    className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-md transition-all duration-200 opacity-80 hover:opacity-100"
-                  >
-                    <X size={14} />
-                  </button>
-                  <p className="text-xs text-gray-500 mt-1 truncate">{file.name}</p>
-                </div>
-              ))}
-            </div>
-          )}
+          <TagsInput
+            value={formData.tags}
+            onChange={(tags) => handleInputChange('tags', tags)}
+            placeholder="Ketik tag dipisah koma: jalanrusak, berlubang, macet"
+            maxTags={5}
+          />
+          <p className="mt-1 text-xs text-gray-500">
+            Ketik tags dipisah koma atau tekan Enter. Contoh: jalanrusak, berlubang, macet, lampu
+          </p>
         </div>
 
-        {/* Kategori Kerusakan */}
+        {/* Photo Upload - Deferred */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Kategori Kerusakan <span className="text-red-500">*</span>
+            Foto Jalan Rusak <span className="text-gray-500">(maksimal 3 foto)</span>
           </label>
-          <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
-            <option value="">Pilih kategori kerusakan jalan</option>
-            <option value="lubang">Lubang</option>
-            <option value="retak">Retak</option>
-            <option value="amblas">Amblas</option>
-            <option value="lainnya">Lainnya</option>
-          </select>
+          <PhotoUploadDeferred maxFiles={3} />
         </div>
 
         {/* Tingkat Urgensi */}
@@ -177,31 +225,18 @@ export default function Formulir() {
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Tingkat Urgensi <span className="text-red-500">*</span>
           </label>
-          <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+          <select 
+            value={formData.priority}
+            onChange={(e) => handleInputChange('priority', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+            required
+          >
             <option value="">Pilih tingkat urgensi</option>
-            <option value="rendah">Rendah</option>
-            <option value="sedang">Sedang</option>
-            <option value="tinggi">Tinggi</option>
-            <option value="sangat-tinggi">Sangat Tinggi</option>
+            <option value="low">Rendah</option>
+            <option value="medium">Sedang</option>
+            <option value="high">Tinggi</option>
+            <option value="critical">Sangat Tinggi</option>
           </select>
-        </div>
-
-        {/* Kontak Pelapor */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Kontak Pelapor (Opsional)
-          </label>
-          <div className="flex">
-            <div className="flex items-center px-3 py-2 bg-gray-50 border border-r-0 border-gray-300 rounded-l-md">
-              <Phone size={16} className="text-gray-600 mr-2" />
-              <span className="text-sm text-gray-600"></span>
-            </div>
-            <input
-              type="tel"
-              placeholder="08123456789"
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-            />
-          </div>
         </div>
 
         {/* Kerahasiaan Identitas */}
@@ -214,9 +249,11 @@ export default function Formulir() {
               <input
                 type="radio"
                 name="privacy"
-                value="anonymous"
+                value="true"
+                checked={formData.is_anonymous === true}
+                onChange={(e) => handleInputChange('is_anonymous', true)}
                 className="mr-2"
-                style={{accentColor: '#DD761C'}}
+                style={{ accentColor: '#DD761C' }}
               />
               <span className="text-sm text-gray-700">Anonim (identitas disembunyikan)</span>
             </label>
@@ -224,9 +261,11 @@ export default function Formulir() {
               <input
                 type="radio"
                 name="privacy"
-                value="public"
+                value="false"
+                checked={formData.is_anonymous === false}
+                onChange={(e) => handleInputChange('is_anonymous', false)}
                 className="mr-2"
-                style={{accentColor: '#DD761C'}}
+                style={{ accentColor: '#DD761C' }}
               />
               <span className="text-sm text-gray-700">Tampilkan Identitas</span>
             </label>
@@ -236,13 +275,14 @@ export default function Formulir() {
         {/* Submit Button */}
         <button
           type="submit"
-          className="w-full text-white font-medium py-3 px-4 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 hover:opacity-90"
+          disabled={isSubmitting}
+          className="w-full text-white font-medium py-3 px-4 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
           style={{
             backgroundColor: '#DD761C',
             '--tw-ring-color': '#DD761C'
           }}
         >
-          KIRIM LAPORAN
+          {isSubmitting ? 'MENGIRIM LAPORAN...' : 'KIRIM LAPORAN'}
         </button>
       </form>
     </div>

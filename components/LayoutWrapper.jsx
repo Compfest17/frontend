@@ -8,9 +8,11 @@ export default function LayoutWrapper({ children }) {
   const pathname = usePathname();
 
   const authPages = ['/login', '/register', '/forgot-password', '/auth/reset-password'];
+  const forumPages = ['/forum'];
   const isAuthPage = authPages.includes(pathname);
+  const isForumPage = pathname.startsWith('/forum');
 
-  if (isAuthPage) {
+  if (isAuthPage || isForumPage) {
     return children; 
   }
   

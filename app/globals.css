@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+@import 'leaflet/dist/leaflet.css';
 
 :root {
   --background: #ffffff;
@@ -21,7 +22,9 @@
 }
 
 body {
-background-color: #ffffff; /* Warna putih */
-  color: #18181b; /* Warna teks gelap */
+background-color: #ffffff; 
+  color: #18181b; 
   font-family: var(--font-montserrat), sans-serif;
 }
+
+

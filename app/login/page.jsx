@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react'; // Import useCallback
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
 import { signIn, signInWithGoogle } from '@/lib/supabase-auth';
 import { getAuthError } from '@/lib/authUtils';
 import BannerSlider from '@/components/auth/BannerSlider';
+import TurnstileWidget from '@/components/TurnstileWidget';
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -17,6 +18,7 @@ export default function LoginPage() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
   const router = useRouter();
 
   const handleInputChange = (e) => {
@@ -33,11 +35,16 @@ export default function LoginPage() {
     setIsLoading(true);
     setError('');
 
+    if (process.env.NEXT_PUBLIC_TURNSTILE_ENABLED === 'true' && !turnstileToken) {
+      setError('Silakan verifikasi Turnstile terlebih dahulu');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await signIn(formData.email, formData.password);
 
       if (error) {
-        // Handle specific error cases
         if (error.message.includes('Invalid login credentials') || 
             error.message.includes('invalid credentials') ||
             error.message.includes('Invalid email or password')) {
@@ -61,12 +68,29 @@ export default function LoginPage() {
       if (data.user) {
         console.log('Login successful:', data);
         localStorage.setItem('supabase_session', JSON.stringify(data.session));
-        router.push('/dashboard');
+        try {
+          const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+          const res = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+            headers: { 'Authorization': `Bearer ${data.session.access_token}` }
+          });
+          if (res.ok) {
+            const profile = await res.json();
+            const role = profile?.data?.user?.role;
+            if (role === 'admin' || role === 'karyawan') {
+              router.push('/dashboard');
+            } else {
+              router.push('/forum');
+            }
+          } else {
+            router.push('/forum');
+          }
+        } catch (_) {
+          router.push('/forum');
+        }
       }
     } catch (error) {
       console.error('Login failed:', error);
       
-      // Handle different error types
       if (error.message.includes('Invalid login credentials') || 
           error.message.includes('invalid credentials') ||
           error.message.includes('Invalid email or password')) {
@@ -93,7 +117,7 @@ export default function LoginPage() {
       setIsGoogleLoading(true);
       setError('');
       
-      const { data, error } = await signInWithGoogle();
+      const { error } = await signInWithGoogle();
       
       if (error) {
         if (error.message.includes('popup') || error.message.includes('cancelled')) {
@@ -120,6 +144,20 @@ export default function LoginPage() {
       setIsGoogleLoading(false);
     }
   };
+
+  // --- PERUBAHAN DIMULAI DI SINI ---
+
+  // Gunakan useCallback untuk menstabilkan fungsi agar tidak dibuat ulang setiap render
+  const handleTurnstileExpire = useCallback(() => {
+    setTurnstileToken('');
+  }, []); // Dependency array kosong, fungsi hanya dibuat sekali
+
+  const handleTurnstileError = useCallback((error) => {
+    setError(`Verifikasi gagal: ${error}`);
+    setTurnstileToken('');
+  }, []); // Dependency array kosong, fungsi hanya dibuat sekali
+
+  // --- AKHIR DARI PERUBAHAN ---
 
   const bannerSlides = [
     {
@@ -237,6 +275,15 @@ export default function LoginPage() {
                 Forget password
               </Link>
             </div>
+
+            {/* --- PERUBAHAN DI PROPS WIDGET --- */}
+            <TurnstileWidget
+              onVerify={setTurnstileToken}
+              onExpire={handleTurnstileExpire}
+              onError={handleTurnstileError}
+              className="my-4"
+            />
+            {/* --- AKHIR DARI PERUBAHAN --- */}
 
             <div className="pt-4">
               <button
