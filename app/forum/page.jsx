@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Sidebar from '../../components/forum/Sidebar';
 import RightSidebar from '../../components/forum/RightSidebar';
 import ForumSection from './components/ForumSection';
@@ -39,12 +39,14 @@ export default function ForumPage() {
         <div className="hidden lg:block flex-shrink-0">
           <Sidebar />
         </div>
-        
-        {/* Main Content */}
-        <div className="flex-1 min-w-0 lg:px-0 px-0">
-          <ForumSection onPostsLoaded={handlePostsLoaded} />
-        </div>
-        
+
+        {/* Wrap ForumSection with Suspense */}
+        <Suspense fallback={<div className="flex-1 flex items-center justify-center p-8">Loading...</div>}>
+          <div className="flex-1 min-w-0 lg:px-0 px-0">
+            <ForumSection onPostsLoaded={handlePostsLoaded} />
+          </div>
+        </Suspense>
+
         <div className="hidden xl:block flex-shrink-0">
           <RightSidebar trendingDiscussions={trendingDiscussions} />
         </div>

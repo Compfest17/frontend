@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, EyeOff } from 'lucide-react';
 import { updatePassword } from '@/lib/supabase-auth';
@@ -18,7 +18,6 @@ export default function ResetPasswordPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   useEffect(() => {
     const handlePasswordReset = async () => {
@@ -32,6 +31,38 @@ export default function ResetPasswordPage() {
 
     handlePasswordReset();
   }, []);
+
+  // Helper to map various error shapes/messages to a friendly localized string
+  const getFriendlyError = (err) => {
+    const msg = (err && (err.message || String(err))) || '';
+    const lower = msg.toLowerCase();
+
+    if (lower.includes('new password should be different') ||
+        lower.includes('should be different from the old password') ||
+        lower.includes('same as old password')) {
+      return 'Password baru harus berbeda dari password lama. Silakan gunakan password yang berbeda.';
+    }
+
+    if (lower.includes('expired') || lower.includes('invalid')) {
+      return 'Link reset password sudah tidak valid atau expired. Silakan minta reset password baru.';
+    }
+
+    if (lower.includes('network')) {
+      return 'Koneksi bermasalah. Silakan coba lagi.';
+    }
+
+    // generic password requirement hint
+    if (lower.includes('password') || lower.includes('pass')) {
+      return 'Password tidak memenuhi kriteria. Pastikan minimal 8 karakter dengan kombinasi huruf dan angka.';
+    }
+
+    // fallback to getAuthError if it's an error object, otherwise return message or generic
+    if (err && typeof err === 'object') {
+      return getAuthError(err, 'reset') || (err.message || 'Gagal mengubah password. Silakan coba lagi.');
+    }
+
+    return msg || 'Gagal mengubah password. Silakan coba lagi.';
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -52,50 +83,22 @@ export default function ResetPasswordPage() {
     }
 
     try {
-      const { error } = await updatePassword(password);
-      
-      if (error) {
-        // Handle specific error cases
-        if (error.message.includes('New password should be different from the old password') ||
-            error.message.includes('should be different from the old password') ||
-            error.message.includes('same as old password')) {
-          setError('Password baru harus berbeda dari password lama. Silakan gunakan password yang berbeda.');
-        } else if (error.message.includes('Password') || error.message.includes('password')) {
-          setError('Password tidak memenuhi kriteria. Pastikan minimal 8 karakter dengan kombinasi huruf dan angka.');
-        } else if (error.message.includes('expired') || error.message.includes('invalid')) {
-          setError('Link reset password sudah tidak valid atau expired. Silakan minta reset password baru.');
-        } else if (error.message.includes('Network') || error.message.includes('network')) {
-          setError('Koneksi bermasalah. Silakan coba lagi.');
-        } else {
-          setError(getAuthError(error, 'reset'));
-        }
+      const { error: updateErr } = await updatePassword(password);
+
+      if (updateErr) {
+        setError(getFriendlyError(updateErr));
         setIsLoading(false);
         return;
       }
 
       setSuccess(true);
-      
+
       setTimeout(() => {
         router.push('/login?message=Password berhasil diubah, silakan login dengan password baru');
       }, 2000);
-
-    } catch (error) {
-      console.error('Reset password error:', error);
-      
-      // Handle different error types
-      if (error.message.includes('New password should be different from the old password') ||
-          error.message.includes('should be different from the old password') ||
-          error.message.includes('same as old password')) {
-        setError('Password baru harus berbeda dari password lama. Silakan gunakan password yang berbeda.');
-      } else if (error.message.includes('Password') || error.message.includes('password')) {
-        setError('Password tidak memenuhi kriteria. Pastikan minimal 8 karakter dengan kombinasi huruf dan angka.');
-      } else if (error.message.includes('expired') || error.message.includes('invalid')) {
-        setError('Link reset password sudah tidak valid atau expired. Silakan minta reset password baru.');
-      } else if (error.message.includes('Network') || error.message.includes('network')) {
-        setError('Koneksi bermasalah. Silakan coba lagi.');
-      } else {
-        setError(error.message || 'Gagal mengubah password. Silakan coba lagi.');
-      }
+    } catch (err) {
+      console.error('Reset password error:', err);
+      setError(getFriendlyError(err));
     } finally {
       setIsLoading(false);
     }
