@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 export default function TurnstileWidget({ 
   onVerify, 
@@ -9,84 +9,88 @@ export default function TurnstileWidget({
   className = '',
   size = 'normal'
 }) {
-  const containerRef = useRef(null);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [isVerified, setIsVerified] = useState(false);
-  
+  const ref = useRef(null);
+  const widgetIdRef = useRef(null); // Ref untuk menyimpan ID widget
+
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
   const isEnabled = process.env.NEXT_PUBLIC_TURNSTILE_ENABLED === 'true';
-  
+
   useEffect(() => {
-    if (!isEnabled || !siteKey) {
-      console.log('Turnstile disabled or site key not found');
+    if (!isEnabled || !siteKey || !ref.current) {
       return;
     }
 
-    const loadTurnstile = () => {
-      if (window.turnstile) {
-        setIsLoaded(true);
-        renderWidget();
-        return;
-      }
+    const renderWidget = () => {
+      if (window.turnstile && ref.current) {
+        // Hapus widget lama jika ada sebelum merender yang baru
+        if (widgetIdRef.current) {
+          window.turnstile.remove(widgetIdRef.current);
+        }
 
+        const widgetId = window.turnstile.render(ref.current, {
+          sitekey: siteKey,
+          theme: 'light',
+          size: size,
+          callback: (token) => {
+            if (onVerify) onVerify(token);
+          },
+          'expired-callback': () => {
+            if (onExpire) onExpire();
+          },
+          'error-callback': () => {
+            if (onError) onError('Verification failed');
+          }
+        });
+        widgetIdRef.current = widgetId; // Simpan ID widget yang baru
+      }
+    };
+
+    if (window.turnstile) {
+      renderWidget();
+    } else {
       const script = document.createElement('script');
-      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback';
       script.async = true;
       script.defer = true;
-      script.onload = () => {
-        setIsLoaded(true);
+      
+      // Definisikan callback global agar bisa dipanggil dari skrip
+      window.onloadTurnstileCallback = () => {
         renderWidget();
       };
+      
       script.onerror = () => {
         console.error('Failed to load Turnstile script');
         if (onError) onError('Failed to load Turnstile');
       };
+      
       document.head.appendChild(script);
-    };
-
-    loadTurnstile();
-  }, [isEnabled, siteKey, onError]);
-
-  const renderWidget = () => {
-    if (!window.turnstile || !containerRef.current || !isLoaded) return;
-
-    try {
-      window.turnstile.render(containerRef.current, {
-        sitekey: siteKey,
-        theme: 'light',
-        size: size,
-        callback: (token) => {
-          setIsVerified(true);
-          if (onVerify) onVerify(token);
-        },
-        'expired-callback': () => {
-          setIsVerified(false);
-          if (onExpire) onExpire();
-        },
-        'error-callback': () => {
-          setIsVerified(false);
-          if (onError) onError('Verification failed');
-        }
-      });
-    } catch (error) {
-      console.error('Error rendering Turnstile widget:', error);
-      if (onError) onError('Widget rendering failed');
     }
-  };
+
+    // Fungsi cleanup untuk menghapus widget saat komponen unmount
+    return () => {
+      if (widgetIdRef.current && window.turnstile) {
+        window.turnstile.remove(widgetIdRef.current);
+      }
+    };
+  }, [isEnabled, siteKey, onVerify, onExpire, onError, size]);
 
   if (!isEnabled) {
     return null;
   }
 
   if (!siteKey) {
-    console.warn('Turnstile site key not found');
-    return null;
+    console.warn('Turnstile site key not found in .env.local');
+    return (
+      <div className="text-red-500 text-center p-4 bg-red-50 rounded-md">
+        Turnstile site key belum diatur.
+      </div>
+    );
   }
 
   return (
     <div className={`turnstile-container ${className}`}>
       <div 
-        ref={containerRef} 
+        ref={ref} 
         className="turnstile-widget"
         style={{ 
           display: 'flex', 
