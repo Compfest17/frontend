@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, EyeOff } from 'lucide-react';
-import { updatePassword, supabase } from '@/lib/supabase-auth'; // Ensure supabase is exported from this module
+import { updatePassword, supabase } from '@/lib/supabase-auth';
 import { validatePassword, getAuthError } from '@/lib/authUtils';
 import PasswordStrength from '@/components/PasswordStrength';
 import BannerSlider from '@/components/auth/BannerSlider';
@@ -18,36 +18,43 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isTokenValid, setIsTokenValid] = useState(false); // State to track token validity
+  const [isTokenValid, setIsTokenValid] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
   const router = useRouter();
 
-  // This effect handles the session from the password recovery link
+  // --- PERBAIKAN UTAMA ADA DI useEffect INI ---
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      // This event fires when the user arrives from the email link
-      if (event === 'SIGNED_IN' && session?.user?.aud === 'authenticated') {
-         // Check if the login was due to a recovery link
-        if (session.user.user_metadata?.is_recovery) {
-            setIsTokenValid(true); // Token is valid, allow password reset
-            setError('');
-        }
-      }
-    });
-
-    // Check on initial load if the token is invalid
+    // 1. Cek format link secara sinkron saat komponen dimuat.
     const hash = window.location.hash;
     if (!hash.includes('access_token') || !hash.includes('type=recovery')) {
         setError('Link reset password tidak valid atau sudah kedaluwarsa.');
         setIsTokenValid(false);
+        return; // Keluar lebih awal jika format link salah.
     }
 
+    // 2. Jika format link benar, siapkan listener untuk event SIGNED_IN dari Supabase.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // Kita hanya peduli pada event SIGNED_IN pertama yang menandakan token valid.
+      if (event === 'SIGNED_IN' && session) {
+        console.log("Sesi pemulihan password berhasil divalidasi.");
+        setIsTokenValid(true); // Izinkan form untuk ditampilkan.
+        setError('');
+        
+        // 3. KRUSIAL: Langsung berhenti mendengarkan setelah event berhasil ditangani.
+        // Ini mencegah listener terpicu lagi dan menyebabkan loop.
+        if (subscription) {
+          subscription.unsubscribe();
+        }
+      }
+    });
 
-    // Cleanup subscription on unmount
+    // 4. Siapkan fungsi cleanup untuk berjaga-jaga jika komponen di-unmount sebelum event terjadi.
     return () => {
-      subscription?.unsubscribe();
+      if (subscription) {
+        subscription.unsubscribe();
+      }
     };
-  }, []);
+  }, []); // Dependency array kosong memastikan hook ini hanya berjalan sekali.
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -270,9 +277,10 @@ export default function ResetPasswordPage() {
               </div>
             </form>
           ) : (
-            // Render nothing or a placeholder while waiting for token validation
-            // The error message will be displayed above
-            <div></div>
+            // Tampilkan placeholder atau loading spinner kecil selagi menunggu validasi token
+            <div className="text-center py-8">
+                <p className="text-gray-500">Memvalidasi link...</p>
+            </div>
           )}
         </div>
       </div>
