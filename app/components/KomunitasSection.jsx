@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import DisplayForumCard from "../../components/DisplayForumCard";
-import ForumAPI from "../../services/forumAPI";
+import ForumAPI from "@/services/forumAPI";
 import { motion, useInView } from "framer-motion";
 
 export default function KomunitasSection() {
@@ -34,6 +34,25 @@ export default function KomunitasSection() {
       }
     };
     fetchForums();
+  }, []);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await ForumAPI.getForums({ page: 1, limit: 9 });
+        if (res.success && Array.isArray(res.data)) {
+          setPosts(res.data);
+          setFilteredPosts(res.data);
+        } else if (res.success && res.data?.data) {
+          setPosts(res.data.data);
+          setFilteredPosts(res.data.data);
+        }
+      } catch (_) {
+        setPosts([]);
+        setFilteredPosts([]);
+      }
+    };
+    load();
   }, []);
 
   const postsPerPage = 3;

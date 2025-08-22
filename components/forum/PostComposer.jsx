@@ -1,7 +1,8 @@
 'use client';
 import { useState } from 'react';
+import MentionAutocomplete from './MentionAutocomplete';
 
-export default function PostComposer() {
+export default function PostComposer({ forumId = null }) {
   const [postContent, setPostContent] = useState('');
 
   return (
@@ -13,13 +14,23 @@ export default function PostComposer() {
           className="w-12 h-12 rounded-full"
         />
         <div className="flex-1">
-          <textarea
-            value={postContent}
-            onChange={(e) => setPostContent(e.target.value)}
-            placeholder="Apa yang sedang terjadi?"
-            className="w-full text-xl placeholder-gray-500 border-none resize-none focus:outline-none min-h-[120px]"
-            rows={3}
-          />
+          {forumId ? (
+            <MentionAutocomplete
+              forumId={forumId}
+              value={postContent}
+              onChange={setPostContent}
+              placeholder="Apa yang sedang terjadi? Gunakan @ untuk mention user..."
+              className="text-xl placeholder-gray-500 min-h-[120px]"
+            />
+          ) : (
+            <textarea
+              value={postContent}
+              onChange={(e) => setPostContent(e.target.value)}
+              placeholder="Apa yang sedang terjadi?"
+              className="w-full text-xl placeholder-gray-500 border-none resize-none focus:outline-none min-h-[120px]"
+              rows={3}
+            />
+          )}
           
           <div className="flex items-center justify-between mt-4">
             <div className="flex items-center gap-4">

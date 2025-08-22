@@ -1,6 +1,9 @@
 'use client';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { getCurrentUser } from '../../lib/supabase-auth';
+import MentionAutocomplete from '../forum/MentionAutocomplete';
+import RoleBadge from '../forum/RoleBadge';
+import UserLevelBadge from '../forum/UserLevelBadge';
 
 export default function CommentsSection({ comments, commentCount = 0, forumId, onAfterSubmit }) {
   const [showMainCommentBox, setShowMainCommentBox] = useState(false);
@@ -88,7 +91,6 @@ export default function CommentsSection({ comments, commentCount = 0, forumId, o
     }
   };
 
-  // Sort comments and their replies
   const sortComments = (commentsToSort) => {
     if (!commentsToSort) return [];
     const sorted = [...commentsToSort];
@@ -108,7 +110,6 @@ export default function CommentsSection({ comments, commentCount = 0, forumId, o
       default:
         break;
     }
-    // Also sort replies for each comment
     sorted.forEach(comment => {
       if (Array.isArray(comment.replies)) {
         comment.replies = sortComments(comment.replies);
@@ -132,10 +133,8 @@ export default function CommentsSection({ comments, commentCount = 0, forumId, o
     }
   };
 
-  // Improved click outside for dropdown using ref and pointerdown for mobile support
   useEffect(() => {
     function handleClickOutside(e) {
-      // Only close if click is outside the dropdown container
       if (sortDropdownRef.current && !sortDropdownRef.current.contains(e.target)) {
         setShowSortDropdown(false);
       }
@@ -148,7 +147,6 @@ export default function CommentsSection({ comments, commentCount = 0, forumId, o
     };
   }, [showSortDropdown]);
 
-  // Handle click outside for action dropdowns
   useEffect(() => {
     function handleClickOutside(e) {
       Object.keys(actionDropdownRefs.current).forEach((id) => {
@@ -244,7 +242,6 @@ export default function CommentsSection({ comments, commentCount = 0, forumId, o
     loadUser();
   }, []);
 
-  // Helper to check if current user is the author
   const isAuthor = (comment) => {
     if (!currentUser) return false;
     return (
@@ -253,14 +250,12 @@ export default function CommentsSection({ comments, commentCount = 0, forumId, o
     );
   };
 
-  // Handle edit click
   const handleEditClick = (comment) => {
     setEditCommentId(comment.id);
     setEditCommentText(comment.content);
     setShowActionDropdown({});
   };
 
-  // Handle delete click
   const handleDeleteClick = async (comment) => {
     setShowActionDropdown({});
     if (!window.confirm('Yakin ingin menghapus komentar ini?')) return;
@@ -277,7 +272,6 @@ export default function CommentsSection({ comments, commentCount = 0, forumId, o
     } catch (_) {}
   };
 
-  // Handle save edit
   const handleSaveEdit = async (comment) => {
     if (!editCommentText.trim()) return;
     try {
@@ -299,7 +293,6 @@ export default function CommentsSection({ comments, commentCount = 0, forumId, o
     } catch (_) {}
   };
 
-  // Handle cancel edit
   const handleCancelEdit = () => {
     setEditCommentId(null);
     setEditCommentText('');
@@ -406,13 +399,12 @@ export default function CommentsSection({ comments, commentCount = 0, forumId, o
             />
           ) : (
             <div>
-              <textarea
+              <MentionAutocomplete
+                forumId={forumId}
                 value={mainComment}
-                onChange={(e) => setMainComment(e.target.value)}
-                placeholder="Tambahkan komentar..."
-                className="w-full border border-gray-300 rounded-lg p-3 text-sm resize-none focus:outline-none focus:border-gray-600"
-                rows={3}
-                autoFocus
+                onChange={setMainComment}
+                placeholder="Tambahkan komentar... Gunakan @ untuk mention user..."
+                className="border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:border-gray-600"
               />
               <div className="flex justify-end gap-2 mt-2">
                 <button
@@ -447,17 +439,19 @@ export default function CommentsSection({ comments, commentCount = 0, forumId, o
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-medium text-gray-900 text-sm">{comment.users?.full_name || comment.users?.username || 'Anonymous'}</span>
+                  {comment.users?.levels?.name && <UserLevelBadge levelName={comment.users.levels.name} />}
+                  <RoleBadge role={comment.users?.roles?.name} />
                   <span className="text-xs text-gray-500">{new Date(comment.created_at).toLocaleDateString('id-ID')}</span>
                 </div>
                 {/* Edit mode for comment */}
                 {editCommentId === comment.id ? (
                   <div>
-                    <textarea
+                    <MentionAutocomplete
+                      forumId={forumId}
                       value={editCommentText}
-                      onChange={(e) => setEditCommentText(e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg p-3 text-sm resize-none focus:outline-none focus:border-gray-600"
-                      rows={3}
-                      autoFocus
+                      onChange={setEditCommentText}
+                      placeholder="Edit komentar... Gunakan @ untuk mention user..."
+                      className="border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:border-gray-600"
                     />
                     <div className="flex justify-end gap-2 mt-2">
                       <button
@@ -569,13 +563,12 @@ export default function CommentsSection({ comments, commentCount = 0, forumId, o
                       onError={(e) => { e.currentTarget.src = "/image/forum/test/profil-test.jpg"; }}
                     />
                     <div className="flex-1">
-                      <textarea
+                      <MentionAutocomplete
+                        forumId={forumId}
                         value={replyText}
-                        onChange={(e) => setReplyText(e.target.value)}
-                        placeholder={`Balas ke ${comment.users?.full_name || comment.users?.username || 'Anonymous'}...`}
-                        className="w-full border border-gray-300 rounded-lg p-3 text-sm resize-none focus:outline-none focus:border-gray-600"
-                        rows={2}
-                        autoFocus
+                        onChange={setReplyText}
+                        placeholder={`Balas ke ${comment.users?.full_name || comment.users?.username || 'Anonymous'}... Gunakan @ untuk mention user...`}
+                        className="border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:border-gray-600"
                       />
                       <div className="flex justify-end gap-2 mt-2">
                         <button
@@ -611,6 +604,8 @@ export default function CommentsSection({ comments, commentCount = 0, forumId, o
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-medium text-gray-900 text-sm">{reply.users?.full_name || reply.users?.username || 'Anonymous'}</span>
+                        {reply.users?.levels?.name && <UserLevelBadge levelName={reply.users.levels.name} />}
+                        <RoleBadge role={reply.users?.roles?.name} />
                         <span className="text-xs text-gray-500">{new Date(reply.created_at).toLocaleDateString('id-ID')}</span>
                       </div>
                       {/* Edit mode for reply */}

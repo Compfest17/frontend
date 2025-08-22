@@ -12,7 +12,7 @@ const faqData = [
   {
     question: "Apakah saya bisa melacak status laporan yang sudah saya buat?",
     answer:
-      "Ya, setiap laporan memiliki ID unik yang dapat Anda gunakan untuk melacak status penanganan. Kami juga akan mengirimkan notifikasi update melalui email atau WhatsApp.",
+      "Ya, setiap laporan memiliki ID unik yang dapat Anda gunakan untuk melacak status penanganan. Kami juga akan mengirimkan notifikasi update melalui website ini.",
   },
   {
     question: "Jenis infrastruktur apa saja yang bisa dilaporkan?",

@@ -1,16 +1,40 @@
 'use client';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { getCurrentUser } from '@/lib/supabase-auth';
+import { useRealtimeNotifications } from '@/hooks/useRealtimeReports';
 
 export default function Sidebar({ onNavigate }) {
   const router = useRouter();
   const pathname = usePathname();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useRealtimeNotifications({
+    userId: currentUser?.id,
+    onNotification: () => {
+      setUnreadCount((c) => c + 1);
+    }
+  });
 
   useEffect(() => {
-    // Dummy notification count
-    setUnreadCount(110);
-    // fetchUnreadCount(); // Nonaktifkan pemanggilan API
+    const init = async () => {
+      try {
+        const { user } = await getCurrentUser();
+        if (!user) return;
+        setCurrentUser(user);
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+        const res = await fetch(`${API_BASE_URL}/api/notifications/unread-count`, {
+          headers: { Authorization: `Bearer ${user.access_token}` }
+        });
+        if (res.ok) {
+          const json = await res.json();
+          const count = json?.data?.unread_count ?? 0;
+          setUnreadCount(count);
+        }
+      } catch (_) {}
+    };
+    init();
   }, []);
 
   const menuItems = [

@@ -134,7 +134,7 @@ export default function ForumSection({ onPostsLoaded }) {
         'Terbuka': 'open',
         'Sedang di proses': 'in_progress',
         'Selesai': 'resolved', 
-        'Batal': 'closed'
+        'Dibatalkan': 'closed'
       };
       const filterStatus = statusMap[statusFilter];
       if (filterStatus) {

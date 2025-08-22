@@ -2,6 +2,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import StatusBadge from './formulir/StatusBadge';
+import UserLevelBadge from './forum/UserLevelBadge';
 import ForumAPI from '../services/forumAPI';
 import { getCurrentUser } from '../lib/supabase-auth';
 
@@ -419,6 +420,9 @@ export default function DisplayForumCard({ post, rank }) {
                 <span className="font-semibold text-gray-900 hover:underline cursor-pointer text-sm sm:text-base">
                   {post.is_anonymous ? 'Anonymous' : (post.users?.full_name || post.author || 'Anonymous')}
                 </span>
+                {!post.is_anonymous && post.users?.levels?.name && (
+                  <UserLevelBadge levelName={post.users.levels.name} />
+                )}
                 {!post.is_anonymous && (post.users?.username || post.author) && (
                   <span className="text-gray-500 text-xs sm:text-sm">
                     @{post.users?.username || post.author?.toLowerCase().replace(/\s+/g, '') || 'anonymous'}

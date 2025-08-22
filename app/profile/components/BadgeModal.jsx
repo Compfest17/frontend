@@ -33,12 +33,18 @@ export default function BadgeModal({ isOpen, onClose, currentBadge, allBadges = 
         if (!currentUser) return;
         const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
         const res = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+          method: 'GET',
           headers: { Authorization: `Bearer ${currentUser.access_token}` },
+          cache: 'no-store'
         });
         if (!mounted) return;
         if (res.ok) {
           const result = await res.json();
-          setUserProfile(result.data.user);
+          const profile = result?.data?.user || result?.data || null;
+          if (profile) {
+            profile.current_points = Number(profile.current_points || 0);
+          }
+          setUserProfile(profile);
           return;
         }
       } catch (e) {

@@ -39,6 +39,10 @@ export default function DashboardPage() {
         const userWithRole = profileData.data.user;
         console.log('Dashboard user data:', userWithRole);
 
+        if (userWithRole.role !== 'admin' && userWithRole.role !== 'karyawan') {
+          router.replace('/forum');
+          return;
+        }
         setUser(userWithRole);
       } catch (err) {
         console.error('Dashboard access error:', err);

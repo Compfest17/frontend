@@ -92,9 +92,10 @@ export default function ForumPostPage({ params }) {
               {/* Author Info */}
               <div className="flex items-center gap-3 mb-6">
                 <img 
-                  src="/image/forum/test/profil-test.jpg" 
+                  src={(post.author_avatar || '/image/forum/test/profil-test.jpg')}
                   alt="Profile"
                   className="w-10 h-10 rounded-full object-cover"
+                  onError={(e) => { e.currentTarget.src = '/image/forum/test/profil-test.jpg'; }}
                 />
                 <div>
                   <p className="font-medium text-gray-900">{post.author}</p>

@@ -1,15 +1,12 @@
 import { supabase } from '@/lib/supabase-auth';
 
-console.log('contactAPI: File loaded successfully!');
 
 export const testFunction = () => {
-  console.log('testFunction called successfully!');
   return 'Test successful';
 };
 
 export const submitContactMessage = async (messageData) => {
   try {
-    console.log('contactAPI (Frontend): Submitting to Backend API:', messageData);
     
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/contact`, {
       method: 'POST',
@@ -21,7 +18,6 @@ export const submitContactMessage = async (messageData) => {
 
     const result = await response.json();
     
-    console.log('contactAPI (Frontend): Backend API response:', result);
 
     if (!response.ok) {
       if (result.details && Array.isArray(result.details)) {

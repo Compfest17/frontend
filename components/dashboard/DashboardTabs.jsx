@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   BarChart3, 
@@ -25,6 +25,7 @@ import PointSystemTab from './tabs/PointSystemTab';
 export default function DashboardTabs({ user }) {
   const [activeTab, setActiveTab] = useState('');
   const [isMobile, setIsMobile] = useState(false);
+  const [mountedTabs, setMountedTabs] = useState({});
 
   const tabs = useMemo(() => {
     if (user?.role === 'admin') {
@@ -63,7 +64,13 @@ export default function DashboardTabs({ user }) {
       const savedTab = localStorage.getItem(`dashboard-tab-${user.role}`);
       const defaultTab = tabs[0].id;
       const validSavedTab = savedTab && tabs.find(t => t.id === savedTab);
-      setActiveTab(validSavedTab ? savedTab : defaultTab);
+      const initialTab = validSavedTab ? savedTab : defaultTab;
+      setActiveTab(initialTab);
+      const allTabsMounted = {};
+      tabs.forEach(tab => {
+        allTabsMounted[tab.id] = true;
+      });
+      setMountedTabs(allTabsMounted);
     }
   }, [user.role, tabs]);
 
@@ -77,6 +84,7 @@ export default function DashboardTabs({ user }) {
 
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
+    setMountedTabs(prev => ({ ...prev, [tabId]: true }));
   };
 
   const handleSwipe = (direction) => {
@@ -121,22 +129,17 @@ export default function DashboardTabs({ user }) {
         )}
       </div>
 
-      <div className="relative">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, x: isMobile ? 100 : 0, y: isMobile ? 0 : 20 }}
-            animate={{ opacity: 1, x: 0, y: 0 }}
-            exit={{ opacity: 0, x: isMobile ? -100 : 0, y: isMobile ? 0 : -20 }}
-            transition={{ 
-              duration: 0.3,
-              ease: [0.25, 0.1, 0.25, 1]
-            }}
-            className="p-6"
-          >
-            {ActiveComponent && <ActiveComponent user={user} />}
-          </motion.div>
-        </AnimatePresence>
+      <div className="relative p-6">
+        {tabs.map(tab => {
+          const TabComp = tab.component;
+          const isActive = activeTab === tab.id;
+          const isMounted = mountedTabs[tab.id];
+          return (
+            <div key={tab.id} className={isActive ? 'block' : 'hidden'}>
+              {isMounted && <TabComp user={user} />}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

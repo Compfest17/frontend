@@ -144,16 +144,16 @@ export default function BannerForum({ user, onEditProfile }) {
                  </div>
                </div>
                
-               {/* overall simple progress (based on activeBadge points) */}
+               {/* overall simple progress based on current_points */}
                <div className="mt-6">
                  <div className="text-sm text-gray-600 mb-2 text-center">
-                   Progress: {activeBadge ? `${activeBadge.points ?? 0} points` : '—'}
+                   Progress: {(Number(user?.current_points) || 0)} points
                  </div>
                  <div className="w-full bg-gray-200 h-3 rounded-full overflow-hidden">
                    <div
                      className="bg-amber-400 h-3"
                      style={{
-                       width: `${activeBadge ? Math.min(100, ((activeBadge.points ?? 0) / (levelPoints['Level Aquanus'] || 1)) * 100) : 0}%`,
+                       width: `${Math.min(100, (((Number(user?.current_points) || 0)) / (levelPoints['Level Aquanus'] || 1)) * 100)}%`,
                      }}
                    />
                  </div>
