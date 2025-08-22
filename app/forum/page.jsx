@@ -7,6 +7,8 @@ import ForumAPI from '../../services/forumAPI';
 import BottomBar from '../../components/forum/BottomBar';
 import MobileSidebarTrigger from '../../components/forum/MobileSidebarTrigger';
 
+//test
+
 export default function ForumPage() {
   const [trendingDiscussions, setTrendingDiscussions] = useState([]);
 
