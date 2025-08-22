@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Edit, Trash2, ToggleLeft, ToggleRight, Settings, Award } from 'lucide-react';
 import { getCurrentUser } from '@/lib/supabase-auth';
+import { toast } from 'react-toastify';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -148,10 +149,10 @@ export default function PointSystemTab({ user }) {
         points: 5,
         description: ''
       });
-      alert('Point rule berhasil dibuat!');
+      toast.success('Point rule berhasil dibuat!');
     } catch (error) {
       console.error('Error creating rule:', error);
-      alert(`Error: ${error.message}`);
+      toast.error(`Error: ${error.message}`);
     } finally {
       setSubmitting(false);
     }
@@ -194,10 +195,10 @@ export default function PointSystemTab({ user }) {
 
       console.log('Rule toggle successful, reloading rules...');
       await loadPointRules();
-      alert('Status rule berhasil diupdate!');
+      toast.success('Status rule berhasil diupdate!');
     } catch (error) {
       console.error('Error toggling rule:', error);
-      alert(`Error: ${error.message}`);
+      toast.error(`Error: ${error.message}`);
     }
   };
 
@@ -246,10 +247,10 @@ export default function PointSystemTab({ user }) {
         points: 0,
         description: ''
       });
-      alert('Rule berhasil diupdate!');
+      toast.success('Rule berhasil diupdate!');
     } catch (error) {
       console.error('Error updating rule:', error);
-      alert(`Error: ${error.message}`);
+      toast.error(`Error: ${error.message}`);
     } finally {
       setSubmitting(false);
     }
@@ -278,17 +279,17 @@ export default function PointSystemTab({ user }) {
     if (submitting) return;
     
     if (!manualAdjustment.username.trim()) {
-      alert('Username harus diisi!');
+      toast.error('Username harus diisi!');
       return;
     }
     
     if (manualAdjustment.points === 0) {
-      alert('Points tidak boleh 0!');
+      toast.error('Points tidak boleh 0!');
       return;
     }
     
     if (!manualAdjustment.reason.trim()) {
-      alert('Alasan harus diisi!');
+      toast.error('Alasan harus diisi!');
       return;
     }
     
@@ -309,7 +310,7 @@ export default function PointSystemTab({ user }) {
         token = localStorage.getItem('authToken');
         if (!token) {
           console.error('No access token found in handleManualAdjustment');
-          alert('Tidak dapat mengakses sistem. Coba login ulang.');
+          toast.error('Tidak dapat mengakses sistem. Coba login ulang.');
           return;
         }
       }
@@ -336,10 +337,10 @@ export default function PointSystemTab({ user }) {
         reason: ''
       });
       
-      alert(`Berhasil! ${data.user.username} (${data.user.name}): ${data.user.previousPoints} → ${data.user.newPoints} points`);
+      toast.success(`Berhasil! ${data.user.username} (${data.user.name}): ${data.user.previousPoints} → ${data.user.newPoints} points`);
     } catch (error) {
       console.error('Error manual adjustment:', error);
-      alert(`Error: ${error.message}`);
+      toast.error(`Error: ${error.message}`);
     } finally {
       setSubmitting(false);
     }

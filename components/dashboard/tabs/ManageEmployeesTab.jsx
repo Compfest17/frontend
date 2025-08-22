@@ -18,6 +18,7 @@ import {
 import { getCurrentUser } from '@/lib/supabase-auth';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ProvinceCitySearch from '@/components/ProvinceCitySearch';
+import { toast } from 'react-toastify';
 
 export default function ManageEmployeesTab({ user }) {
   const [employees, setEmployees] = useState([]);
@@ -134,13 +135,14 @@ export default function ManageEmployeesTab({ user }) {
       if (response.ok) {
         await fetchEmployees();
         setEditingEmployee(null);
+        toast.success('Assignment berhasil diperbarui');
       } else {
         const error = await response.json();
-        alert(error.message || 'Gagal update assignment');
+        toast.error(error.message || 'Gagal update assignment');
       }
     } catch (error) {
       console.error('Failed to update assignment:', error);
-      alert('Gagal update assignment');
+      toast.error('Gagal update assignment');
     }
   };
 
@@ -162,13 +164,14 @@ export default function ManageEmployeesTab({ user }) {
 
       if (response.ok) {
         fetchEmployees();
+        toast.success('Karyawan berhasil dihapus');
       } else {
         const error = await response.json();
-        alert(error.message || 'Gagal hapus karyawan');
+        toast.error(error.message || 'Gagal hapus karyawan');
       }
     } catch (error) {
       console.error('Failed to delete employee:', error);
-      alert('Gagal hapus karyawan');
+      toast.error('Gagal hapus karyawan');
     }
   };
 

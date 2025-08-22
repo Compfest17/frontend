@@ -3,6 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { Upload, X, Image, CheckCircle, AlertCircle, Loader } from 'lucide-react';
 import { usePendingUploads } from '@/contexts/PendingUploadsContext';
+import { toast } from 'react-toastify';
 
 export default function PhotoUploadDeferred({
   maxFiles = 3,
@@ -18,7 +19,7 @@ export default function PhotoUploadDeferred({
     if (files.length === 0) return;
 
     if (pendingFiles.length + files.length > maxFiles) {
-      alert(`Maksimal ${maxFiles} foto yang dapat diunggah`);
+      toast.error(`Maksimal ${maxFiles} foto yang dapat diunggah`);
       return;
     }
 
@@ -29,12 +30,12 @@ export default function PhotoUploadDeferred({
 
   const validateAndAddFile = (file) => {
     if (!allowedTypes.includes(file.type)) {
-      alert(`Format file tidak didukung. Gunakan: ${allowedTypes.join(', ')}`);
+      toast.error(`Format file tidak didukung. Gunakan: ${allowedTypes.join(', ')}`);
       return;
     }
 
     if (file.size > maxSize) {
-      alert(`Ukuran file terlalu besar. Maksimal ${Math.round(maxSize / 1024 / 1024)}MB`);
+      toast.error(`Ukuran file terlalu besar. Maksimal ${Math.round(maxSize / 1024 / 1024)}MB`);
       return;
     }
 

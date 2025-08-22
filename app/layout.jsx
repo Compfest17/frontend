@@ -3,6 +3,8 @@
 import { Montserrat, Geist_Mono } from "next/font/google"; // <-- 1. IMPOR MONTSERRAT
 import "./globals.css";
 import LayoutWrapper from "@/components/LayoutWrapper";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // 2. KONFIGURASI FONT MONTSERRAT
 const montserrat = Montserrat({
@@ -29,6 +31,7 @@ export default function RootLayout({ children }) {
       >
         <LayoutWrapper>
           {children}
+          <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
         </LayoutWrapper>
       </body>
     </html>
