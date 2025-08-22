@@ -24,32 +24,42 @@ export default function ResetPasswordPage() {
 
   // --- PERBAIKAN UTAMA ADA DI useEffect INI ---
   useEffect(() => {
+    let isMounted = true;
+    let subscription = null;
+
+    const handleAuthChange = (event, session) => {
+      // KRUSIAL: Langsung berhenti mendengarkan setelah event pertama diterima.
+      // Ini adalah kunci untuk mencegah loop.
+      if (subscription) {
+        subscription.unsubscribe();
+        subscription = null;
+      }
+
+      // Hanya update state jika komponen masih ter-mount dan event-nya sesuai.
+      if (isMounted && event === 'SIGNED_IN' && session) {
+        console.log("Sesi pemulihan password berhasil divalidasi.");
+        setIsTokenValid(true);
+        setError('');
+      }
+    };
+
     // 1. Cek format link secara sinkron saat komponen dimuat.
     const hash = window.location.hash;
     if (!hash.includes('access_token') || !hash.includes('type=recovery')) {
-        setError('Link reset password tidak valid atau sudah kedaluwarsa.');
-        setIsTokenValid(false);
+        if (isMounted) {
+            setError('Link reset password tidak valid atau sudah kedaluwarsa.');
+            setIsTokenValid(false);
+        }
         return; // Keluar lebih awal jika format link salah.
     }
 
-    // 2. Jika format link benar, siapkan listener untuk event SIGNED_IN dari Supabase.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      // Kita hanya peduli pada event SIGNED_IN pertama yang menandakan token valid.
-      if (event === 'SIGNED_IN' && session) {
-        console.log("Sesi pemulihan password berhasil divalidasi.");
-        setIsTokenValid(true); // Izinkan form untuk ditampilkan.
-        setError('');
-        
-        // 3. KRUSIAL: Langsung berhenti mendengarkan setelah event berhasil ditangani.
-        // Ini mencegah listener terpicu lagi dan menyebabkan loop.
-        if (subscription) {
-          subscription.unsubscribe();
-        }
-      }
-    });
+    // 2. Jika format link benar, siapkan listener.
+    const authSubscription = supabase.auth.onAuthStateChange(handleAuthChange);
+    subscription = authSubscription.data.subscription;
 
-    // 4. Siapkan fungsi cleanup untuk berjaga-jaga jika komponen di-unmount sebelum event terjadi.
+    // 3. Siapkan fungsi cleanup untuk berjaga-jaga.
     return () => {
+      isMounted = false;
       if (subscription) {
         subscription.unsubscribe();
       }
