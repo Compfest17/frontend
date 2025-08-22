@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react'; // Import useRef
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, EyeOff } from 'lucide-react';
-import { updatePassword } from '@/lib/supabase-auth';
+import { updatePassword, supabase } from '@/lib/supabase-auth';
 import { validatePassword, getAuthError } from '@/lib/authUtils';
 import PasswordStrength from '@/components/PasswordStrength';
 import BannerSlider from '@/components/auth/BannerSlider';
+import TurnstileWidget from '@/components/TurnstileWidget';
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
@@ -17,54 +18,72 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isTokenValid, setIsTokenValid] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
   const router = useRouter();
 
+  // Gunakan useRef sebagai "kunci gerbang" untuk memastikan validasi hanya berjalan sekali.
+  // Ini adalah kunci paling ampuh untuk menghentikan bootloop.
+  const validationLock = useRef(false);
+
+  // Guard to prevent clearing a verified Turnstile token repeatedly
+  const tokenLock = useRef(false);
+
   useEffect(() => {
-    const handlePasswordReset = async () => {
-      const hash = window.location.hash;
-      if (hash.includes('access_token') && hash.includes('type=recovery')) {
+    // Cek format link secara sinkron saat komponen dimuat.
+    const hash = window.location.hash;
+    if (!hash.includes('access_token') || !hash.includes('type=recovery')) {
+        setError('Link reset password tidak valid atau sudah kedaluwarsa.');
+        setIsTokenValid(false);
+        return; // Keluar lebih awal jika format link salah.
+    }
+
+    // Jika format link benar, siapkan listener.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // PERIKSA KUNCI: Jika validasi sudah pernah berjalan (gerbang terkunci), jangan lakukan apa-apa lagi.
+      if (validationLock.current) {
         return;
-      } else {
-        setError('Link reset password tidak valid atau sudah expired');
+      }
+
+      if (event === 'SIGNED_IN' && session) {
+        // KUNCI GERBANG: Set flag ke true agar blok ini tidak akan pernah bisa diakses lagi.
+        validationLock.current = true;
+        
+        console.log("Sesi pemulihan password berhasil divalidasi.");
+        setIsTokenValid(true); // Izinkan form untuk ditampilkan.
+        setError('');
+        
+        // Langsung berhenti mendengarkan setelah event berhasil ditangani.
+        if (subscription) {
+          subscription.unsubscribe();
+        }
+      }
+    });
+
+    // Siapkan fungsi cleanup untuk berjaga-jaga jika komponen di-unmount.
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe();
       }
     };
-
-    handlePasswordReset();
-  }, []);
-
-  const getFriendlyError = (err) => {
-    const msg = (err && (err.message || String(err))) || '';
-    const lower = msg.toLowerCase();
-
-    if (lower.includes('new password should be different') ||
-        lower.includes('should be different from the old password') ||
-        lower.includes('same as old password')) {
-      return 'Password baru harus berbeda dari password lama. Silakan gunakan password yang berbeda.';
-    }
-
-    if (lower.includes('expired') || lower.includes('invalid')) {
-      return 'Link reset password sudah tidak valid atau expired. Silakan minta reset password baru.';
-    }
-
-    if (lower.includes('network')) {
-      return 'Koneksi bermasalah. Silakan coba lagi.';
-    }
-
-    if (lower.includes('password') || lower.includes('pass')) {
-      return 'Password tidak memenuhi kriteria. Pastikan minimal 8 karakter dengan kombinasi huruf dan angka.';
-    }
-
-    if (err && typeof err === 'object') {
-      return getAuthError(err, 'reset') || (err.message || 'Gagal mengubah password. Silakan coba lagi.');
-    }
-
-    return msg || 'Gagal mengubah password. Silakan coba lagi.';
-  };
+  }, []); // Dependency array kosong memastikan hook ini hanya berjalan sekali.
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!isTokenValid) {
+        setError('Sesi reset password tidak valid. Silakan minta link baru.');
+        return;
+    }
+
     setIsLoading(true);
     setError('');
+
+    if (process.env.NEXT_PUBLIC_TURNSTILE_ENABLED === 'true' && !turnstileToken) {
+      setError('Silakan verifikasi Turnstile terlebih dahulu');
+      setIsLoading(false);
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError('Password tidak sama');
@@ -83,7 +102,7 @@ export default function ResetPasswordPage() {
       const { error: updateErr } = await updatePassword(password);
 
       if (updateErr) {
-        setError(getFriendlyError(updateErr));
+        setError(getAuthError(updateErr, 'reset'));
         setIsLoading(false);
         return;
       }
@@ -95,11 +114,31 @@ export default function ResetPasswordPage() {
       }, 2000);
     } catch (err) {
       console.error('Reset password error:', err);
-      setError(getFriendlyError(err));
+      setError(getAuthError(err, 'reset'));
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Stabilize Turnstile callbacks with a guard so token isn't reset after successful verify
+  const handleTurnstileExpire = useCallback(() => {
+    if (!tokenLock.current) {
+      setTurnstileToken('');
+    }
+  }, []);
+
+  const handleTurnstileError = useCallback((err) => {
+    if (!tokenLock.current) {
+      setError(`Verifikasi gagal: ${err}`);
+      setTurnstileToken('');
+    }
+  }, []);
+
+  // Called when Turnstile verification succeeds; lock token to avoid future clears
+  const handleVerify = useCallback((token) => {
+    setTurnstileToken(token);
+    tokenLock.current = true;
+  }, []);
 
   const bannerSlides = [
     {
@@ -141,7 +180,6 @@ export default function ResetPasswordPage() {
             </div>
           </div>
         </div>
-
         <BannerSlider slides={successBannerSlides} autoSlide={false} />
       </div>
     );
@@ -176,93 +214,99 @@ export default function ResetPasswordPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                PASSWORD BARU *
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  id="password"
-                  name="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Masukkan password baru"
-                  className="w-full px-0 py-3 pr-10 border-0 border-b-2 border-gray-300 focus:outline-none bg-transparent text-gray-900 placeholder-gray-500 transition-colors duration-200"
-                  style={{ 
-                    borderBottomColor: password ? '#DD761C' : undefined,
-                  }}
-                  onFocus={(e) => e.target.style.borderBottomColor = '#DD761C'}
-                  onBlur={(e) => e.target.style.borderBottomColor = password ? '#DD761C' : '#d1d5db'}
-                  required
-                  disabled={isLoading}
-                  minLength={8}
-                />
+          {isTokenValid ? (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                  PASSWORD BARU *
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    id="password"
+                    name="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Masukkan password baru"
+                    className="w-full px-0 py-3 pr-10 border-0 border-b-2 border-gray-300 focus:outline-none bg-transparent text-gray-900 placeholder-gray-500 transition-colors duration-200"
+                    style={{ 
+                      borderBottomColor: password ? '#DD761C' : undefined,
+                    }}
+                    onFocus={(e) => e.target.style.borderBottomColor = '#DD761C'}
+                    onBlur={(e) => e.target.style.borderBottomColor = password ? '#DD761C' : '#d1d5db'}
+                    required
+                    disabled={isLoading}
+                    minLength={8}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-0 top-3 text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+                  </button>
+                </div>
+                <PasswordStrength password={password} />
+              </div>
+
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                  KONFIRMASI PASSWORD *
+                </label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Konfirmasi password baru"
+                    className="w-full px-0 py-3 pr-10 border-0 border-b-2 border-gray-300 focus:outline-none bg-transparent text-gray-900 placeholder-gray-500 transition-colors duration-200"
+                    style={{ 
+                      borderBottomColor: confirmPassword ? '#DD761C' : undefined,
+                    }}
+                    onFocus={(e) => e.target.style.borderBottomColor = '#DD761C'}
+                    onBlur={(e) => e.target.style.borderBottomColor = confirmPassword ? '#DD761C' : '#d1d5db'}
+                    required
+                    disabled={isLoading}
+                    minLength={8}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-0 top-3 text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                    tabIndex={-1}
+                  >
+                    {showConfirmPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+
+              <TurnstileWidget
+                onVerify={handleVerify}
+                onExpire={handleTurnstileExpire}
+                onError={handleTurnstileError}
+                className="my-4"
+              />
+
+              <div className="pt-4">
                 <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-0 top-3 text-gray-500 hover:text-gray-700 transition-colors duration-200"
-                  tabIndex={-1}
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full text-white font-medium py-4 rounded-full transition-all duration-200 hover:opacity-90 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ backgroundColor: '#DD761C' }}
                 >
-                  {showPassword ? (
-                    <Eye className="w-5 h-5" />
-                  ) : (
-                    <EyeOff className="w-5 h-5" />
-                  )}
+                  {isLoading ? 'Mengubah Password...' : 'Ubah Password'}
                 </button>
               </div>
-              <PasswordStrength password={password} />
+            </form>
+          ) : (
+            // Tampilkan placeholder atau loading spinner kecil selagi menunggu validasi token
+            <div className="text-center py-8">
+                <p className="text-gray-500">Memvalidasi link...</p>
             </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                KONFIRMASI PASSWORD *
-              </label>
-              <div className="relative">
-                <input
-                  type={showConfirmPassword ? "text" : "password"}
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Konfirmasi password baru"
-                  className="w-full px-0 py-3 pr-10 border-0 border-b-2 border-gray-300 focus:outline-none bg-transparent text-gray-900 placeholder-gray-500 transition-colors duration-200"
-                  style={{ 
-                    borderBottomColor: confirmPassword ? '#DD761C' : undefined,
-                  }}
-                  onFocus={(e) => e.target.style.borderBottomColor = '#DD761C'}
-                  onBlur={(e) => e.target.style.borderBottomColor = confirmPassword ? '#DD761C' : '#d1d5db'}
-                  required
-                  disabled={isLoading}
-                  minLength={8}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-0 top-3 text-gray-500 hover:text-gray-700 transition-colors duration-200"
-                  tabIndex={-1}
-                >
-                  {showConfirmPassword ? (
-                    <Eye className="w-5 h-5" />
-                  ) : (
-                    <EyeOff className="w-5 h-5" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            <div className="pt-4">
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full text-white font-medium py-4 rounded-full transition-all duration-200 hover:opacity-90 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ backgroundColor: '#DD761C' }}
-              >
-                {isLoading ? 'Mengubah Password...' : 'Ubah Password'}
-              </button>
-            </div>
-          </form>
+          )}
         </div>
       </div>
 

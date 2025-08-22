@@ -1,113 +1,96 @@
 'use client';
 
-import { useEffect, useRef, useState, memo } from 'react';
+import { useEffect, useRef } from 'react';
 
-const TurnstileWidget = memo(({ 
+export default function TurnstileWidget({ 
   onVerify, 
   onExpire, 
   onError, 
   className = '',
   size = 'normal'
-}) => {
-  const containerRef = useRef(null);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [isRendered, setIsRendered] = useState(false);
-  const widgetIdRef = useRef(null);
-  const scriptLoadedRef = useRef(false);
-  
+}) {
+  const ref = useRef(null);
+  const widgetIdRef = useRef(null); // Ref untuk menyimpan ID widget
+
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
   const isEnabled = process.env.NEXT_PUBLIC_TURNSTILE_ENABLED === 'true';
-  
+
   useEffect(() => {
-    if (!isEnabled || !siteKey || isRendered) {
+    if (!isEnabled || !siteKey || !ref.current) {
       return;
     }
 
-    const loadTurnstile = async () => {
-      if (scriptLoadedRef.current && window.turnstile) {
-        setIsLoaded(true);
-        return;
-      }
-
-      if (!scriptLoadedRef.current) {
-        const script = document.createElement('script');
-        script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
-        script.async = true;
-        script.defer = true;
-        
-        script.onload = () => {
-          scriptLoadedRef.current = true;
-          setIsLoaded(true);
-        };
-        
-        script.onerror = () => {
-          console.error('Failed to load Turnstile script');
-          if (onError) onError('Failed to load Turnstile');
-        };
-        
-        document.head.appendChild(script);
-      }
-    };
-
-    loadTurnstile();
-  }, [isEnabled, siteKey, isRendered]);
-
-  useEffect(() => {
-    if (!isLoaded || !isEnabled || !siteKey || isRendered || !containerRef.current) {
-      return;
-    }
-
-    try {
-      const widgetId = window.turnstile.render(containerRef.current, {
-        sitekey: siteKey,
-        theme: 'light',
-        size: size,
-        callback: (token) => {
-          if (onVerify) onVerify(token);
-        },
-        'expired-callback': () => {
-          if (onExpire) onExpire();
-        },
-        'error-callback': () => {
-          if (onError) onError('Verification failed');
-        }
-      });
-      
-      widgetIdRef.current = widgetId;
-      setIsRendered(true);
-      console.log('Turnstile widget rendered successfully');
-    } catch (error) {
-      console.error('Error rendering Turnstile widget:', error);
-      if (onError) onError('Widget rendering failed');
-    }
-  }, [isLoaded, isEnabled, siteKey, size, onVerify, onExpire, onError, isRendered]);
-
-  useEffect(() => {
-    return () => {
-      if (widgetIdRef.current && window.turnstile && typeof window.turnstile.remove === 'function') {
-        try {
+    const renderWidget = () => {
+      if (window.turnstile && ref.current) {
+        // Hapus widget lama jika ada sebelum merender yang baru
+        if (widgetIdRef.current) {
           window.turnstile.remove(widgetIdRef.current);
-          console.log('Turnstile widget removed');
-        } catch (error) {
-          console.error('Error removing Turnstile widget:', error);
         }
+
+        const widgetId = window.turnstile.render(ref.current, {
+          sitekey: siteKey,
+          theme: 'light',
+          size: size,
+          callback: (token) => {
+            if (onVerify) onVerify(token);
+          },
+          'expired-callback': () => {
+            if (onExpire) onExpire();
+          },
+          'error-callback': () => {
+            if (onError) onError('Verification failed');
+          }
+        });
+        widgetIdRef.current = widgetId; // Simpan ID widget yang baru
       }
     };
-  }, []);
+
+    if (window.turnstile) {
+      renderWidget();
+    } else {
+      const script = document.createElement('script');
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback';
+      script.async = true;
+      script.defer = true;
+      
+      // Definisikan callback global agar bisa dipanggil dari skrip
+      window.onloadTurnstileCallback = () => {
+        renderWidget();
+      };
+      
+      script.onerror = () => {
+        console.error('Failed to load Turnstile script');
+        if (onError) onError('Failed to load Turnstile');
+      };
+      
+      document.head.appendChild(script);
+    }
+
+    // Fungsi cleanup untuk menghapus widget saat komponen unmount
+    return () => {
+      if (widgetIdRef.current && window.turnstile) {
+        window.turnstile.remove(widgetIdRef.current);
+      }
+    };
+  }, [isEnabled, siteKey, onVerify, onExpire, onError, size]);
 
   if (!isEnabled) {
     return null;
   }
 
   if (!siteKey) {
-    console.warn('Turnstile site key not found');
-    return null;
+    console.warn('Turnstile site key not found in .env.local');
+    return (
+      <div className="text-red-500 text-center p-4 bg-red-50 rounded-md">
+        Turnstile site key belum diatur.
+      </div>
+    );
   }
 
   return (
     <div className={`turnstile-container ${className}`}>
       <div 
-        ref={containerRef} 
+        ref={ref} 
         className="turnstile-widget"
         style={{ 
           display: 'flex', 
@@ -117,8 +100,4 @@ const TurnstileWidget = memo(({
       />
     </div>
   );
-});
-
-TurnstileWidget.displayName = 'TurnstileWidget';
-
-export default TurnstileWidget;
+}

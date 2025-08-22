@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react'; // Import useCallback
 import { submitContactMessage } from '@/services/contactAPI';
 import TurnstileWidget from '@/components/TurnstileWidget';
 
@@ -13,7 +13,8 @@ export default function ContactSection() {
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState(null);
+  const [submitStatus, setSubmitStatus] = useState(null); // Can be 'success', 'error', or null
+  const [errorMessage, setErrorMessage] = useState(''); // State for specific error messages
   const [turnstileToken, setTurnstileToken] = useState(''); 
 
   const handleInputChange = (e) => {
@@ -28,8 +29,10 @@ export default function ContactSection() {
     e.preventDefault();
     setIsSubmitting(true);
     setSubmitStatus(null);
+    setErrorMessage('');
     
     if (process.env.NEXT_PUBLIC_TURNSTILE_ENABLED === 'true' && !turnstileToken) {
+      setErrorMessage('Silakan selesaikan verifikasi untuk mengirim pesan.');
       setSubmitStatus('error');
       setIsSubmitting(false);
       return;
@@ -37,21 +40,17 @@ export default function ContactSection() {
     
     try {
       if (!formData.fullName.trim() || !formData.email.trim() || !formData.message.trim()) {
-        throw new Error('Please fill in all required fields');
+        throw new Error('Harap isi semua kolom yang wajib diisi (*).');
       }
       
       if (formData.message.trim().length < 5) {
-        throw new Error('Message must be at least 5 characters long');
+        throw new Error('Pesan harus memiliki panjang minimal 5 karakter.');
       }
       
-      console.log('Submitting form data:', formData);
-      
-      const result = await submitContactMessage(formData);
+      const result = await submitContactMessage({ ...formData, turnstileToken });
 
-      console.log('API Response:', result);
-      
       if (result.error) {
-        throw new Error(result.error.message || 'Failed to send message');
+        throw new Error(result.error.message || 'Gagal mengirim pesan');
       }
 
       setSubmitStatus('success');
@@ -63,11 +62,28 @@ export default function ContactSection() {
       });
     } catch (error) {
       console.error('Error submitting message:', error);
+      setErrorMessage(error.message || 'Terjadi kesalahan. Silakan coba lagi.');
       setSubmitStatus('error');
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // --- PERUBAHAN DIMULAI DI SINI ---
+
+  // Gunakan useCallback untuk menstabilkan fungsi agar tidak dibuat ulang setiap render
+  const handleTurnstileExpire = useCallback(() => {
+    setTurnstileToken('');
+  }, []);
+
+  const handleTurnstileError = useCallback((error) => {
+    console.error('Turnstile error:', error);
+    setErrorMessage('Verifikasi gagal, silakan muat ulang halaman dan coba lagi.');
+    setSubmitStatus('error');
+    setTurnstileToken('');
+  }, []);
+
+  // --- AKHIR DARI PERUBAHAN ---
 
   return (
     <section className="py-16 bg-gray-50">
@@ -130,13 +146,13 @@ export default function ContactSection() {
                 </div>
               )}
               
-              {submitStatus === 'error' && (
+              {submitStatus === 'error' && errorMessage && (
                 <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md">
                   <div className="flex items-center">
                     <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                     </svg>
-                    Gagal mengirim pesan. Silakan coba lagi.
+                    {errorMessage}
                   </div>
                 </div>
               )}
@@ -202,11 +218,8 @@ export default function ContactSection() {
 
               <TurnstileWidget
                 onVerify={setTurnstileToken}
-                onExpire={() => setTurnstileToken('')}
-                onError={(error) => {
-                  console.error('Turnstile error:', error);
-                  setTurnstileToken('');
-                }}
+                onExpire={handleTurnstileExpire}
+                onError={handleTurnstileError}
                 className="my-4"
               />
 

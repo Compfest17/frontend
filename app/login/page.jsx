@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react'; // Import useCallback
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
@@ -117,7 +117,7 @@ export default function LoginPage() {
       setIsGoogleLoading(true);
       setError('');
       
-      const { data, error } = await signInWithGoogle();
+      const { error } = await signInWithGoogle();
       
       if (error) {
         if (error.message.includes('popup') || error.message.includes('cancelled')) {
@@ -144,6 +144,20 @@ export default function LoginPage() {
       setIsGoogleLoading(false);
     }
   };
+
+  // --- PERUBAHAN DIMULAI DI SINI ---
+
+  // Gunakan useCallback untuk menstabilkan fungsi agar tidak dibuat ulang setiap render
+  const handleTurnstileExpire = useCallback(() => {
+    setTurnstileToken('');
+  }, []); // Dependency array kosong, fungsi hanya dibuat sekali
+
+  const handleTurnstileError = useCallback((error) => {
+    setError(`Verifikasi gagal: ${error}`);
+    setTurnstileToken('');
+  }, []); // Dependency array kosong, fungsi hanya dibuat sekali
+
+  // --- AKHIR DARI PERUBAHAN ---
 
   const bannerSlides = [
     {
@@ -262,15 +276,14 @@ export default function LoginPage() {
               </Link>
             </div>
 
+            {/* --- PERUBAHAN DI PROPS WIDGET --- */}
             <TurnstileWidget
               onVerify={setTurnstileToken}
-              onExpire={() => setTurnstileToken('')}
-              onError={(error) => {
-                setError(`Verifikasi gagal: ${error}`);
-                setTurnstileToken('');
-              }}
+              onExpire={handleTurnstileExpire}
+              onError={handleTurnstileError}
               className="my-4"
             />
+            {/* --- AKHIR DARI PERUBAHAN --- */}
 
             <div className="pt-4">
               <button
