@@ -75,7 +75,6 @@ export default function KomunitasSection() {
     })
   };
 
-  // Ref and inView for scroll-triggered animation
   const sectionRef = useRef(null);
   const inView = useInView(sectionRef, { once: true, margin: "-100px 0px" });
 

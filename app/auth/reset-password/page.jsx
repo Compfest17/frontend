@@ -32,7 +32,6 @@ export default function ResetPasswordPage() {
     handlePasswordReset();
   }, []);
 
-  // Helper to map various error shapes/messages to a friendly localized string
   const getFriendlyError = (err) => {
     const msg = (err && (err.message || String(err))) || '';
     const lower = msg.toLowerCase();
@@ -51,12 +50,10 @@ export default function ResetPasswordPage() {
       return 'Koneksi bermasalah. Silakan coba lagi.';
     }
 
-    // generic password requirement hint
     if (lower.includes('password') || lower.includes('pass')) {
       return 'Password tidak memenuhi kriteria. Pastikan minimal 8 karakter dengan kombinasi huruf dan angka.';
     }
 
-    // fallback to getAuthError if it's an error object, otherwise return message or generic
     if (err && typeof err === 'object') {
       return getAuthError(err, 'reset') || (err.message || 'Gagal mengubah password. Silakan coba lagi.');
     }

@@ -7,7 +7,6 @@ export default function BadgeModal({ isOpen, onClose, currentBadge, allBadges = 
 
   const [userProfile, setUserProfile] = useState(null);
 
-  // Default level images & points (sinkronkan bila ada perubahan di komponen lain)
   const levelImages = {
     'Level Gundala': '/image/profile/gundala.png',
     'Level GatotKaca': '/image/profile/gatotkaca.png',
@@ -23,7 +22,6 @@ export default function BadgeModal({ isOpen, onClose, currentBadge, allBadges = 
     'Level Aquanus': 1000,
   };
 
-  // fetch latest profile when modal opens (mirip behaviour di profile/page.jsx)
   useEffect(() => {
     if (!isOpen) return;
     let mounted = true;
@@ -55,32 +53,23 @@ export default function BadgeModal({ isOpen, onClose, currentBadge, allBadges = 
     return () => { mounted = false; };
   }, [isOpen]);
 
-  // Build full list of levels (so badges lain selalu tampil di modal)
-  // Prefer data from fetched userProfile (for real points/ownership), fallback to allBadges passed from BannerForum
   const userLevels = (userProfile?.levels && (Array.isArray(userProfile.levels) ? userProfile.levels : [userProfile.levels])) || [];
 
-  // use the canonical levelPoints for thresholds
   const fullList = Object.keys(levelImages).map(name => ({
     name,
     img: levelImages[name],
     points: levelPoints[name] ?? 0,
-    // owned if user's current_points meets threshold OR userLevels contains the level OR BannerForum passed it
     owned: (userProfile?.current_points ?? 0) >= (levelPoints[name] ?? 0) || Boolean(userLevels.find(l => l?.name === name)) || Boolean(allBadges.find(b => b.name === name)),
   }));
 
-  // Determine indexes:
-  // clickedIndex = badge user clicked (currentBadge prop)
   const clickedIndex = currentBadge ? fullList.findIndex(b => b.name === currentBadge.name) : -1;
-  // progressIndex = highest index that current_points >= threshold
   const currentPoints = userProfile?.current_points ?? 0;
   let progressIndex = -1;
   for (let i = 0; i < fullList.length; i++) {
     if (currentPoints >= (fullList[i].points || 0)) progressIndex = i;
   }
-  // decide which index to visually treat as active: clicked if any, else progressIndex
   const visualActiveIndex = clickedIndex !== -1 ? clickedIndex : progressIndex;
 
-  // compute min width so many badges still fit (scrollable if overflow)
   const minWidthPx = Math.max(600, fullList.length * 180);
 
   return (
@@ -140,9 +129,7 @@ export default function BadgeModal({ isOpen, onClose, currentBadge, allBadges = 
           </div>
         </div>
 
-        {/* simple overall progress bar */}
         <div className="mt-6">
-          {/* Use current_points from fetched profile (same logic as profile/page.jsx) */}
           <div className="text-sm text-gray-600 mb-2 text-center">
             Progress: {currentPoints} points
           </div>

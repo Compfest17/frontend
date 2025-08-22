@@ -7,6 +7,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { signIn, signInWithGoogle } from '@/lib/supabase-auth';
 import { getAuthError } from '@/lib/authUtils';
 import BannerSlider from '@/components/auth/BannerSlider';
+import TurnstileWidget from '@/components/TurnstileWidget';
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -17,6 +18,7 @@ export default function LoginPage() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
   const router = useRouter();
 
   const handleInputChange = (e) => {
@@ -32,6 +34,12 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+
+    if (process.env.NEXT_PUBLIC_TURNSTILE_ENABLED === 'true' && !turnstileToken) {
+      setError('Silakan verifikasi Turnstile terlebih dahulu');
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const { data, error } = await signIn(formData.email, formData.password);
@@ -253,6 +261,16 @@ export default function LoginPage() {
                 Forget password
               </Link>
             </div>
+
+            <TurnstileWidget
+              onVerify={setTurnstileToken}
+              onExpire={() => setTurnstileToken('')}
+              onError={(error) => {
+                setError(`Verifikasi gagal: ${error}`);
+                setTurnstileToken('');
+              }}
+              className="my-4"
+            />
 
             <div className="pt-4">
               <button
