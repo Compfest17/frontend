@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react'; // Import useRef
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, EyeOff } from 'lucide-react';
@@ -22,44 +22,43 @@ export default function ResetPasswordPage() {
   const [turnstileToken, setTurnstileToken] = useState('');
   const router = useRouter();
 
-  // --- PERBAIKAN UTAMA ADA DI useEffect INI ---
+  // Gunakan useRef sebagai flag untuk memastikan validasi hanya berjalan sekali.
+  // Ini adalah kunci untuk menghentikan bootloop.
+  const validationLock = useRef(false);
+
   useEffect(() => {
-    let isMounted = true;
-    let subscription = null;
-
-    const handleAuthChange = (event, session) => {
-      // KRUSIAL: Langsung berhenti mendengarkan setelah event pertama diterima.
-      // Ini adalah kunci untuk mencegah loop.
-      if (subscription) {
-        subscription.unsubscribe();
-        subscription = null;
-      }
-
-      // Hanya update state jika komponen masih ter-mount dan event-nya sesuai.
-      if (isMounted && event === 'SIGNED_IN' && session) {
-        console.log("Sesi pemulihan password berhasil divalidasi.");
-        setIsTokenValid(true);
-        setError('');
-      }
-    };
-
-    // 1. Cek format link secara sinkron saat komponen dimuat.
+    // Cek format link secara sinkron saat komponen dimuat.
     const hash = window.location.hash;
     if (!hash.includes('access_token') || !hash.includes('type=recovery')) {
-        if (isMounted) {
-            setError('Link reset password tidak valid atau sudah kedaluwarsa.');
-            setIsTokenValid(false);
-        }
+        setError('Link reset password tidak valid atau sudah kedaluwarsa.');
+        setIsTokenValid(false);
         return; // Keluar lebih awal jika format link salah.
     }
 
-    // 2. Jika format link benar, siapkan listener.
-    const authSubscription = supabase.auth.onAuthStateChange(handleAuthChange);
-    subscription = authSubscription.data.subscription;
+    // Jika format link benar, siapkan listener.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // PERIKSA KUNCI: Jika validasi sudah pernah berjalan, jangan lakukan apa-apa lagi.
+      if (validationLock.current) {
+        return;
+      }
 
-    // 3. Siapkan fungsi cleanup untuk berjaga-jaga.
+      if (event === 'SIGNED_IN' && session) {
+        // KUNCI GERBANG: Set flag ke true agar blok ini tidak akan pernah bisa diakses lagi.
+        validationLock.current = true;
+        
+        console.log("Sesi pemulihan password berhasil divalidasi.");
+        setIsTokenValid(true); // Izinkan form untuk ditampilkan.
+        setError('');
+        
+        // Langsung berhenti mendengarkan setelah event berhasil ditangani.
+        if (subscription) {
+          subscription.unsubscribe();
+        }
+      }
+    });
+
+    // Siapkan fungsi cleanup untuk berjaga-jaga jika komponen di-unmount.
     return () => {
-      isMounted = false;
       if (subscription) {
         subscription.unsubscribe();
       }
