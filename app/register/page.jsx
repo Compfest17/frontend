@@ -8,6 +8,7 @@ import { signUp, signInWithGoogle } from '@/lib/supabase-auth';
 import { validatePassword, getAuthError } from '@/lib/authUtils';
 import PasswordStrength from '@/components/PasswordStrength';
 import BannerSlider from '@/components/auth/BannerSlider';
+import TurnstileWidget from '@/components/TurnstileWidget';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -23,6 +24,7 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
   const router = useRouter();
 
   const handleInputChange = (e) => {
@@ -39,6 +41,12 @@ export default function RegisterPage() {
     setIsLoading(true);
     setError('');
     setSuccess('');
+
+    if (process.env.NEXT_PUBLIC_TURNSTILE_ENABLED === 'true' && !turnstileToken) {
+      setError('Silakan verifikasi Turnstile terlebih dahulu');
+      setIsLoading(false);
+      return;
+    }
 
     if (formData.password !== formData.confirmPassword) {
       setError('Password tidak sama');
@@ -339,6 +347,16 @@ export default function RegisterPage() {
                 </button>
               </div>
             </div>
+
+            <TurnstileWidget
+              onVerify={setTurnstileToken}
+              onExpire={() => setTurnstileToken('')}
+              onError={(error) => {
+                setError(`Verifikasi gagal: ${error}`);
+                setTurnstileToken('');
+              }}
+              className="my-4"
+            />
 
             <div className="pt-4">
               <button

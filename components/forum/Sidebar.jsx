@@ -84,8 +84,6 @@ export default function Sidebar({ onNavigate }) {
     return pathname.startsWith(path);
   };
 
-  // Sidebar for desktop (xl and up)
-  // BottomBar for mobile/tablet (below xl)
   return (
     <>
       {/* Sidebar - only desktop */}

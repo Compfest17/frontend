@@ -21,13 +21,12 @@ export default function MentionAutocomplete({
   const [currentMention, setCurrentMention] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [dropdownPosition, setDropdownPosition] = useState('above'); // 'above' or 'below'
+  const [dropdownPosition, setDropdownPosition] = useState('above'); 
   
   const inputRef = useRef(null);
   const suggestionsRef = useRef(null);
   const debounceRef = useRef(null);
 
-  // Debounced function to fetch suggestions
   const fetchSuggestions = useCallback(async (query) => {
     if (!query || query.length < 1) {
       setSuggestions([]);
@@ -37,7 +36,6 @@ export default function MentionAutocomplete({
 
     setLoading(true);
     try {
-      // Get current user token
       const { user } = await getCurrentUser();
       if (!user?.access_token) {
         console.error('No access token found');
@@ -77,7 +75,6 @@ export default function MentionAutocomplete({
     }
   }, [forumId]);
 
-  // Handle input change
   const handleInputChange = (e) => {
     const newValue = e.target.value;
     onChange(newValue);
@@ -85,7 +82,6 @@ export default function MentionAutocomplete({
     const cursorPos = e.target.selectionStart;
     setCursorPosition(cursorPos);
     
-    // Check if we're in a mention context
     const beforeCursor = newValue.substring(0, cursorPos);
     const mentionMatch = beforeCursor.match(/@([a-zA-Z0-9_\u00C0-\u017F\s]*)$/);
     
@@ -96,7 +92,6 @@ export default function MentionAutocomplete({
       console.log('📝 Mention detected, query:', query);
       setCurrentMention(query);
       
-              // Check available space above and below input
         if (inputRef.current) {
           const rect = inputRef.current.getBoundingClientRect();
           const spaceAbove = rect.top;
@@ -104,7 +99,6 @@ export default function MentionAutocomplete({
           
           console.log('📏 Space check - Above:', spaceAbove, 'Below:', spaceBelow);
           
-          // If more space below, show dropdown below
           if (spaceBelow > spaceAbove && spaceBelow > 200) {
             setDropdownPosition('below');
             console.log('⬇️ Setting dropdown position: below');
@@ -114,12 +108,10 @@ export default function MentionAutocomplete({
           }
         }
       
-      // Clear previous debounce
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);
       }
       
-      // Debounce API calls
       debounceRef.current = setTimeout(() => {
         console.log('⏰ Debounced fetch suggestions for:', query);
         fetchSuggestions(query);
@@ -130,7 +122,6 @@ export default function MentionAutocomplete({
     }
   };
 
-  // Handle suggestion selection
   const handleSuggestionSelect = (suggestion) => {
     const beforeMention = value.substring(0, cursorPosition - currentMention.length - 1);
     const afterMention = value.substring(cursorPosition);
@@ -140,7 +131,6 @@ export default function MentionAutocomplete({
     setShowSuggestions(false);
     setCurrentMention('');
     
-    // Focus back to input and position cursor
     if (inputRef.current) {
       inputRef.current.focus();
       const newCursorPos = beforeMention.length + (suggestion.username || suggestion.full_name).length + 2;
@@ -152,7 +142,6 @@ export default function MentionAutocomplete({
     }
   };
 
-  // Handle keyboard navigation
   const handleKeyDown = (e) => {
     if (!showSuggestions) return;
     
@@ -182,7 +171,6 @@ export default function MentionAutocomplete({
     }
   };
 
-  // Handle click outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (inputRef.current && !inputRef.current.contains(event.target) &&
@@ -196,7 +184,6 @@ export default function MentionAutocomplete({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Cleanup debounce on unmount
   useEffect(() => {
     return () => {
       if (debounceRef.current) {

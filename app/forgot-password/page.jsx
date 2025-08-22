@@ -6,17 +6,25 @@ import Link from 'next/link';
 import { resetPassword } from '@/lib/supabase-auth';
 import { getAuthError } from '@/lib/authUtils';
 import BannerSlider from '@/components/auth/BannerSlider';
+import TurnstileWidget from '@/components/TurnstileWidget';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+
+    if (process.env.NEXT_PUBLIC_TURNSTILE_ENABLED === 'true' && !turnstileToken) {
+      setError('Silakan verifikasi Turnstile terlebih dahulu');
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const { error } = await resetPassword(email);
@@ -168,6 +176,16 @@ export default function ForgotPasswordPage() {
                 disabled={isLoading}
               />
             </div>
+
+            <TurnstileWidget
+              onVerify={setTurnstileToken}
+              onExpire={() => setTurnstileToken('')}
+              onError={(error) => {
+                setError(`Verifikasi gagal: ${error}`);
+                setTurnstileToken('');
+              }}
+              className="my-4"
+            />
 
             <div className="pt-4">
               <button

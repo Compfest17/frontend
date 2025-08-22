@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { Star, Edit3 } from 'lucide-react';
 
-// Mapping level names to image paths
 const levelImages = {
   'Level Gundala': '/image/profile/gundala.png',
   'Level GatotKaca': '/image/profile/gatotkaca.png',
@@ -11,7 +10,6 @@ const levelImages = {
   'Level Aquanus': '/image/profile/aquanus.png',
 };
 
-// Mapping points for each level (dipakai di modal progress)
 const levelPoints = {
   'Level Gundala': 0,
   'Level GatotKaca': 100,
@@ -33,21 +31,17 @@ export default function BannerForum({ user, onEditProfile }) {
     setModalOpen(false);
     setActiveBadge(null);
   };
-   // Get current level name and image
    const levelName = user?.levels?.name || 'Level Gundala';
    const levelImgSrc = levelImages[levelName] || '/image/profile/gundala.png';
  
-   // New: normalize levels into an array of {name, img} so we can stack multiple badges
    const badges = (() => {
      if (!user?.levels) return [{ name: levelName, img: levelImgSrc }];
-     // if levels is an array of objects
      if (Array.isArray(user.levels)) {
        return user.levels.map(l => {
          const name = l?.name || levelName;
          return { name, img: levelImages[name] || '/image/profile/gundala.png', points: levelPoints[name] ?? 0 };
        });
      }
-     // if levels is single object
      const singleName = user.levels?.name || levelName;
      return [{ name: singleName, img: levelImages[singleName] || '/image/profile/gundala.png', points: levelPoints[singleName] ?? 0 }];
    })();
@@ -73,7 +67,6 @@ export default function BannerForum({ user, onEditProfile }) {
                {/* Stack badges: moved slightly to bottom-right */}
                {user?.role === 'user' && (
                  <div
-                   // moved slightly left and down
                    className="absolute bottom-1 right-0 flex items-end transform -translate-x-2 translate-y-1"
                    aria-hidden="true"
                  >

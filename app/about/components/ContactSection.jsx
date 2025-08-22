@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { submitContactMessage } from '@/services/contactAPI';
+import TurnstileWidget from '@/components/TurnstileWidget';
 
 export default function ContactSection() {
   const [formData, setFormData] = useState({
@@ -12,7 +13,8 @@ export default function ContactSection() {
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState(null); 
+  const [submitStatus, setSubmitStatus] = useState(null);
+  const [turnstileToken, setTurnstileToken] = useState(''); 
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -26,6 +28,12 @@ export default function ContactSection() {
     e.preventDefault();
     setIsSubmitting(true);
     setSubmitStatus(null);
+    
+    if (process.env.NEXT_PUBLIC_TURNSTILE_ENABLED === 'true' && !turnstileToken) {
+      setSubmitStatus('error');
+      setIsSubmitting(false);
+      return;
+    }
     
     try {
       if (!formData.fullName.trim() || !formData.email.trim() || !formData.message.trim()) {
@@ -191,6 +199,16 @@ export default function ContactSection() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
                 />
               </div>
+
+              <TurnstileWidget
+                onVerify={setTurnstileToken}
+                onExpire={() => setTurnstileToken('')}
+                onError={(error) => {
+                  console.error('Turnstile error:', error);
+                  setTurnstileToken('');
+                }}
+                className="my-4"
+              />
 
               <button
                 type="submit"

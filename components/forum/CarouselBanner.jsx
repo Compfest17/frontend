@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 export default function CarouselBanner() {
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  // Update banners to use only the provided images
   const banners = [
     {
       id: 1,
