@@ -9,7 +9,8 @@ import {
   Calendar,
   Clock,
   Search,
-  Filter
+  Filter,
+  Eye
 } from 'lucide-react';
 import { getCurrentUser } from '@/lib/supabase-auth';
 import LoadingSpinner from '@/components/LoadingSpinner';

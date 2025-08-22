@@ -4,19 +4,12 @@ import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { Bell, MessageSquare } from 'lucide-react';
 import Statistic from "../../data/statisticData.json";
-import AOS from 'aos';
-import 'aos/dist/aos.css'; 
 
 
 export default function HeroSection() {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    // Initialize AOS only on client side
-    if (typeof window !== 'undefined') {
-      AOS.init();
-    }
-    
     const timer = setTimeout(() => {
       setIsLoaded(true);
     }, 200);
@@ -103,6 +96,20 @@ export default function HeroSection() {
         delay: 1.6,
       },
     },
+  };
+
+  // Statistic card animation variants
+  const statCardVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: (i) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: 2.2 + i * 0.15,
+        duration: 0.7,
+        ease: [0.25, 0.1, 0.25, 1],
+      },
+    }),
   };
 
   return (
@@ -294,17 +301,63 @@ export default function HeroSection() {
         </motion.div>
         
         {/* Statistic */}
-        <div className='flex flex-col md:flex-row mx-auto md:justify-center items-center md:gap-10 mt-20 gap-10 '>
-        {Statistic.map((statistic) => (
-          <div key={statistic.id} className='bg-white border-1 border-zinc-100 shadow-md w-45 px-5 py-7 rounded-xl'
-          data-aos="fade-up"
-          data-aos-duration="1000">
-            <h3 className='text-center text-4xl text-[#DD761C] font-semibold mb-2'>{statistic.jumlah} </h3>
-            <p className='text-[#DD761C] text-base text-center'>{statistic.kategori}</p>
+        <div className="mt-20 flex flex-col items-center w-full">
+          {/* Mobile layout: 2 cards in first row, 1 card in second row */}
+          <div className="flex flex-row gap-4 w-full justify-center md:hidden">
+            {Statistic.slice(0, 2).map((statistic, i) => (
+              <motion.div
+                key={statistic.id}
+                className="bg-white border-1 border-zinc-100 shadow-md w-40 px-5 py-7 rounded-xl"
+                variants={statCardVariants}
+                initial="hidden"
+                animate={isLoaded ? "visible" : "hidden"}
+                custom={i}
+              >
+                <h3 className="text-center text-4xl text-[#DD761C] font-semibold mb-2">
+                  {statistic.jumlah}
+                </h3>
+                <p className="text-[#DD761C] text-base text-center">
+                  {statistic.kategori}
+                </p>
+              </motion.div>
+            ))}
           </div>
-        ))}
-
-          
+          <div className="flex flex-row w-full justify-center mt-4 md:hidden">
+            <motion.div
+              className="bg-white border-1 border-zinc-100 shadow-md w-40 px-5 py-7 rounded-xl"
+              variants={statCardVariants}
+              initial="hidden"
+              animate={isLoaded ? "visible" : "hidden"}
+              custom={2}
+            >
+              <h3 className="text-center text-4xl text-[#DD761C] font-semibold mb-2">
+                {Statistic[2].jumlah}
+              </h3>
+              <p className="text-[#DD761C] text-base text-center">
+                {Statistic[2].kategori}
+              </p>
+            </motion.div>
+          </div>
+          {/* Desktop layout: all cards in a row */}
+          <div className="hidden md:flex flex-row mx-auto justify-center items-center gap-10">
+            {Statistic.map((statistic, i) => (
+              <motion.div
+                key={statistic.id}
+                className="bg-white border-1 border-zinc-100 shadow-md w-45 px-5 py-7 rounded-xl"
+                variants={statCardVariants}
+                initial="hidden"
+                animate={isLoaded ? "visible" : "hidden"}
+                custom={i}
+              >
+                <h3 className="text-center text-4xl text-[#DD761C] font-semibold mb-2">
+                  {statistic.jumlah}
+                </h3>
+                <p className="text-[#DD761C] text-base text-center">
+                  {statistic.kategori}
+                </p>
+              </motion.div>
+            ))}
+          </div>
         </div>
 
       </div>

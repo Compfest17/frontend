@@ -8,6 +8,7 @@ import PhotoUploadDeferred from '@/components/formulir/PhotoUploadDeferred';
 import UploadStatus from '@/components/formulir/UploadStatus';
 import ForumAPI from '@/services/forumAPI';
 import { usePendingUploads } from '@/contexts/PendingUploadsContext';
+import { toast } from "react-toastify";
 
 export default function Formulir({ user, onAuthRequired }) {
   const { uploadAllPending, clearAllPending, getUploadStats } = usePendingUploads();
@@ -42,7 +43,7 @@ export default function Formulir({ user, onAuthRequired }) {
     }
 
     if (user?.role === 'admin' || user?.role === 'karyawan') {
-      alert('Akun admin/karyawan tidak bisa mengirim formulir.');
+      toast.error('Akun admin/karyawan tidak bisa mengirim formulir.');
       return;
     }
 
@@ -55,7 +56,7 @@ export default function Formulir({ user, onAuthRequired }) {
     
     if (!formData.title || !formData.description || !formData.incident_date || 
         !hasValidAddress || !formData.priority) {
-      alert('Mohon lengkapi semua field yang wajib diisi dan pastikan alamat memiliki koordinat yang valid');
+      toast.error('Mohon lengkapi semua field yang wajib diisi dan pastikan alamat memiliki koordinat yang valid');
       return;
     }
 
@@ -79,7 +80,7 @@ export default function Formulir({ user, onAuthRequired }) {
           console.log('📷 Media URLs to send:', media_urls);
         } catch (uploadError) {
           console.error('❌ Upload error:', uploadError);
-          alert('Gagal mengupload foto. Silakan coba lagi.');
+          toast.error('Gagal mengupload foto. Silakan coba lagi.');
           return;
         }
       } else {
@@ -102,7 +103,7 @@ export default function Formulir({ user, onAuthRequired }) {
       const response = await ForumAPI.createForum(submitData, user.access_token);
       
       if (response.success) {
-        alert('Laporan berhasil dikirim!');
+        toast.success('Laporan berhasil dikirim!');
         
         clearAllPending();
         
@@ -123,7 +124,7 @@ export default function Formulir({ user, onAuthRequired }) {
         throw new Error(response.message || 'Gagal mengirim laporan');
       }
     } catch (error) {
-      alert(`Error: ${error.message}`);
+      toast.error(`Error: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase-auth';
+import { toast } from 'react-toastify';
 
 export default function AdminPointSystem({ user }) {
   const [activeTab, setActiveTab] = useState('rules');
@@ -92,7 +93,7 @@ export default function AdminPointSystem({ user }) {
 
       const result = await response.json();
       if (result.success) {
-        alert('✅ Point rule created successfully!');
+        toast.success('✅ Point rule created successfully!');
         setNewRule({
           event_type: '',
           event_condition: '',
@@ -102,11 +103,11 @@ export default function AdminPointSystem({ user }) {
         });
         loadPointRules();
       } else {
-        alert(`❌ Error: ${result.error}`);
+        toast.error(`❌ Error: ${result.error}`);
       }
     } catch (error) {
       console.error('❌ Error creating rule:', error);
-      alert('❌ Error creating rule');
+      toast.error('❌ Error creating rule');
     }
   };
 
@@ -129,7 +130,7 @@ export default function AdminPointSystem({ user }) {
       if (result.success) {
         loadPointRules();
       } else {
-        alert(`❌ Error: ${result.error}`);
+        toast.error(`❌ Error: ${result.error}`);
       }
     } catch (error) {
       console.error('❌ Error toggling rule:', error);
@@ -158,7 +159,7 @@ export default function AdminPointSystem({ user }) {
 
       const result = await response.json();
       if (result.success) {
-        alert(`✅ Successfully ${manualAdjustment.points > 0 ? 'awarded' : 'deducted'} ${Math.abs(manualAdjustment.points)} points!`);
+        toast.success(`✅ Successfully ${manualAdjustment.points > 0 ? 'awarded' : 'deducted'} ${Math.abs(manualAdjustment.points)} points!`);
         setManualAdjustment({
           userId: '',
           points: 0,
@@ -166,11 +167,11 @@ export default function AdminPointSystem({ user }) {
         });
         loadPointStats();
       } else {
-        alert(`❌ Error: ${result.error}`);
+        toast.error(`❌ Error: ${result.error}`);
       }
     } catch (error) {
       console.error('❌ Error with manual adjustment:', error);
-      alert('❌ Error with manual adjustment');
+      toast.error('❌ Error with manual adjustment');
     }
   };
 

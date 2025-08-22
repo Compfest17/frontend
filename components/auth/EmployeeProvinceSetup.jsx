@@ -6,6 +6,7 @@ import { MapPin, Save, X } from 'lucide-react';
 import { getCurrentUser } from '@/lib/supabase-auth';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ProvinceCitySearch from '@/components/ProvinceCitySearch';
+import { toast } from 'react-toastify';
 
 export default function EmployeeProvinceSetup({ user, onSuccess, onCancel }) {
   
@@ -20,7 +21,7 @@ export default function EmployeeProvinceSetup({ user, onSuccess, onCancel }) {
     e.preventDefault();
     
     if (!formData.assigned_province) {
-      alert('Provinsi wajib dipilih');
+      toast.error('Provinsi wajib dipilih');
       return;
     }
 
@@ -55,14 +56,14 @@ export default function EmployeeProvinceSetup({ user, onSuccess, onCancel }) {
       if (response.ok) {
         await response.json();
         onSuccess();
-        alert('Assignment berhasil diupdate!');
+        toast.success('Assignment berhasil diupdate!');
       } else {
         const error = await response.json();
-        alert(error.message || 'Gagal update assignment');
+        toast.error(error.message || 'Gagal update assignment');
       }
     } catch (error) {
       console.error('Failed to update assignment:', error);
-      alert('Gagal update assignment');
+      toast.error('Gagal update assignment');
     } finally {
       setLoading(false);
     }

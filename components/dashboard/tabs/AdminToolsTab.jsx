@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { getCurrentUser } from '@/lib/supabase-auth';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { toast } from 'react-toastify';
 
 export default function AdminToolsTab({ user }) {
   const [codes, setCodes] = useState([]);
@@ -135,14 +136,14 @@ export default function AdminToolsTab({ user }) {
         
         fetchVerificationCodes();
         
-        alert(`Kode berhasil dibuat: ${result.data.code}`);
+        toast.success(`Kode berhasil dibuat: ${result.data.code}`);
       } else {
         const error = await response.json();
-        alert(error.message || 'Gagal membuat kode');
+        toast.error(error.message || 'Gagal membuat kode');
       }
     } catch (error) {
       console.error('Failed to generate code:', error);
-      alert('Gagal membuat kode verifikasi');
+      toast.error('Gagal membuat kode verifikasi');
     } finally {
       setGenerating(false);
     }
