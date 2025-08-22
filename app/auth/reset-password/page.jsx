@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from 'react'; // Import useRef
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, EyeOff } from 'lucide-react';
@@ -18,76 +18,106 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isTokenValid, setIsTokenValid] = useState(false);
+  const [isTokenValid, setIsTokenValid] = useState(null); // null = loading, true = valid, false = invalid
   const [turnstileToken, setTurnstileToken] = useState('');
   const router = useRouter();
 
-  // Gunakan useRef sebagai flag untuk memastikan validasi hanya berjalan sekali.
-  // Ini adalah kunci untuk menghentikan bootloop.
-  const validationLock = useRef(false);
-
+  // Perbaikan bootloop - gunakan pendekatan yang lebih stabil
   useEffect(() => {
-    // Cek format link secara sinkron saat komponen dimuat.
-    const hash = window.location.hash;
-    if (!hash.includes('access_token') || !hash.includes('type=recovery')) {
-        setError('Link reset password tidak valid atau sudah kedaluwarsa.');
-        setIsTokenValid(false);
-        return; // Keluar lebih awal jika format link salah.
-    }
+    let isMounted = true;
+    
+    const validateResetToken = async () => {
+      try {
+        // 1. Cek format URL hash terlebih dahulu
+        const hash = window.location.hash;
+        if (!hash.includes('access_token') || !hash.includes('type=recovery')) {
+          if (isMounted) {
+            setError('Link reset password tidak valid atau sudah kedaluwarsa.');
+            setIsTokenValid(false);
+          }
+          return;
+        }
 
-    // Jika format link benar, siapkan listener.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      // PERIKSA KUNCI: Jika validasi sudah pernah berjalan, jangan lakukan apa-apa lagi.
-      if (validationLock.current) {
-        return;
-      }
+        // 2. Cek session saat ini tanpa listener yang berpotensi loop
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          if (isMounted) {
+            setError('Gagal memvalidasi sesi. Silakan coba lagi.');
+            setIsTokenValid(false);
+          }
+          return;
+        }
 
-      if (event === 'SIGNED_IN' && session) {
-        // KUNCI GERBANG: Set flag ke true agar blok ini tidak akan pernah bisa diakses lagi.
-        validationLock.current = true;
-        
-        console.log("Sesi pemulihan password berhasil divalidasi.");
-        setIsTokenValid(true); // Izinkan form untuk ditampilkan.
-        setError('');
-        
-        // Langsung berhenti mendengarkan setelah event berhasil ditangani.
-        if (subscription) {
-          subscription.unsubscribe();
+        // 3. Validasi apakah ini adalah session recovery yang valid
+        if (session && session.user) {
+          // Cek apakah ini benar-benar session recovery dengan melihat URL hash
+          const urlParams = new URLSearchParams(hash.substring(1));
+          const tokenType = urlParams.get('type');
+          
+          if (tokenType === 'recovery') {
+            if (isMounted) {
+              setIsTokenValid(true);
+              setError('');
+            }
+          } else {
+            if (isMounted) {
+              setError('Tipe token tidak valid untuk reset password.');
+              setIsTokenValid(false);
+            }
+          }
+        } else {
+          // Tidak ada session, mungkin token sudah expired
+          if (isMounted) {
+            setError('Token reset password sudah kedaluwarsa. Silakan minta link baru.');
+            setIsTokenValid(false);
+          }
+        }
+      } catch (err) {
+        console.error('Token validation error:', err);
+        if (isMounted) {
+          setError('Terjadi kesalahan saat memvalidasi token.');
+          setIsTokenValid(false);
         }
       }
-    });
-
-    // Siapkan fungsi cleanup untuk berjaga-jaga jika komponen di-unmount.
-    return () => {
-      if (subscription) {
-        subscription.unsubscribe();
-      }
     };
-  }, []); // Dependency array kosong memastikan hook ini hanya berjalan sekali.
+
+    // Jalankan validasi
+    validateResetToken();
+
+    // Cleanup function
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Hanya jalankan sekali saat component mount
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!isTokenValid) {
-        setError('Sesi reset password tidak valid. Silakan minta link baru.');
-        return;
+    if (isTokenValid !== true) {
+      setError('Sesi reset password tidak valid. Silakan minta link baru.');
+      return;
     }
 
     setIsLoading(true);
     setError('');
 
+    // Validasi Turnstile jika diaktifkan
     if (process.env.NEXT_PUBLIC_TURNSTILE_ENABLED === 'true' && !turnstileToken) {
       setError('Silakan verifikasi Turnstile terlebih dahulu');
       setIsLoading(false);
       return;
     }
 
+    // Validasi password match
     if (password !== confirmPassword) {
       setError('Password tidak sama');
       setIsLoading(false);
       return;
     }
 
+    // Validasi kekuatan password
     const passwordErrors = validatePassword(password);
     if (passwordErrors.length > 0) {
       setError(`Password: ${passwordErrors.join(', ')}`);
@@ -104,6 +134,7 @@ export default function ResetPasswordPage() {
         return;
       }
 
+      // Success - set flag dan redirect setelah delay
       setSuccess(true);
 
       setTimeout(() => {
@@ -117,8 +148,11 @@ export default function ResetPasswordPage() {
     }
   };
 
-  // Stabilize Turnstile callbacks
-  const handleTurnstileExpire = useCallback(() => setTurnstileToken(''), []);
+  // Stabilize Turnstile callbacks dengan useCallback
+  const handleTurnstileExpire = useCallback(() => {
+    setTurnstileToken('');
+  }, []);
+
   const handleTurnstileError = useCallback((err) => {
     setError(`Verifikasi gagal: ${err}`);
     setTurnstileToken('');
@@ -148,6 +182,7 @@ export default function ResetPasswordPage() {
     }
   ];
 
+  // Tampilan success
   if (success) {
     return (
       <div className="h-screen flex overflow-hidden">
@@ -198,7 +233,36 @@ export default function ResetPasswordPage() {
             </div>
           )}
 
-          {isTokenValid ? (
+          {/* Loading state */}
+          {isTokenValid === null && (
+            <div className="text-center py-8">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: '#DD761C' }}></div>
+              <p className="text-gray-500 mt-4">Memvalidasi link reset password...</p>
+            </div>
+          )}
+
+          {/* Invalid token state */}
+          {isTokenValid === false && (
+            <div className="text-center py-8">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Link Tidak Valid</h2>
+              <p className="text-gray-600 mb-6">Link reset password tidak valid atau sudah kedaluwarsa.</p>
+              <Link 
+                href="/forgot-password"
+                className="inline-block text-white font-medium py-3 px-6 rounded-full transition-all duration-200 hover:opacity-90"
+                style={{ backgroundColor: '#DD761C' }}
+              >
+                Minta Link Baru
+              </Link>
+            </div>
+          )}
+
+          {/* Valid token - show form */}
+          {isTokenValid === true && (
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
@@ -285,11 +349,6 @@ export default function ResetPasswordPage() {
                 </button>
               </div>
             </form>
-          ) : (
-            // Tampilkan placeholder atau loading spinner kecil selagi menunggu validasi token
-            <div className="text-center py-8">
-                <p className="text-gray-500">Memvalidasi link...</p>
-            </div>
           )}
         </div>
       </div>
