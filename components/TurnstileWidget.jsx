@@ -25,6 +25,7 @@ export default function TurnstileWidget({
     const loadTurnstile = () => {
       if (window.turnstile) {
         setIsLoaded(true);
+        renderWidget();
         return;
       }
 
@@ -46,14 +47,8 @@ export default function TurnstileWidget({
     loadTurnstile();
   }, [isEnabled, siteKey, onError]);
 
-  useEffect(() => {
-    if (isLoaded && isEnabled && siteKey) {
-      renderWidget();
-    }
-  }, [isLoaded, isEnabled, siteKey]);
-
   const renderWidget = () => {
-    if (!window.turnstile || !containerRef.current) return;
+    if (!window.turnstile || !containerRef.current || !isLoaded) return;
 
     try {
       window.turnstile.render(containerRef.current, {
@@ -99,11 +94,6 @@ export default function TurnstileWidget({
           margin: '1rem 0'
         }}
       />
-      {isVerified && (
-        <div className="text-green-600 text-sm mt-2 text-center">
-          ✓ Verifikasi berhasil
-        </div>
-      )}
     </div>
   );
 }
